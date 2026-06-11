@@ -1,0 +1,137 @@
+/* ===== PRODUCTS PAGE COMPACT FIX ===== */
+/* Add this to your globals.css or create a new file and import it */
+
+/* Reduce hero padding */
+.products-hero {
+  padding-top: 90px !important;
+  padding-bottom: 40px !important;
+  min-height: auto !important;
+}
+
+.products-hero-content {
+  padding: 0 !important;
+}
+
+/* Compact category bar */
+.category-bar-section {
+  padding: 8px 0 !important;
+}
+
+.category-bar {
+  gap: 8px !important;
+  padding-bottom: 2px !important;
+}
+
+.category-pill {
+  padding: 6px 14px !important;
+  font-size: 0.82rem !important;
+}
+
+.category-pill svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Compact toolbar */
+.toolbar-section {
+  padding: 8px 0 !important;
+}
+
+.toolbar-inner {
+  gap: 12px !important;
+}
+
+.toolbar-btn {
+  padding: 8px 14px !important;
+  font-size: 0.85rem !important;
+}
+
+.sort-dropdown select {
+  padding: 8px 32px 8px 14px !important;
+  font-size: 0.85rem !important;
+}
+
+/* Compact filter panel */
+.filter-panel-section {
+  padding: 0 0 8px !important;
+}
+
+.filter-panel {
+  padding: 14px !important;
+  gap: 14px !important;
+}
+
+.filter-group {
+  min-width: 180px !important;
+}
+
+.filter-group h4 {
+  font-size: 0.88rem !important;
+  margin-bottom: 10px !important;
+}
+
+.price-inputs input {
+  padding: 10px 12px !important;
+  font-size: 0.9rem !important;
+}
+
+.filter-reset {
+  padding: 10px 18px !important;
+  font-size: 0.85rem !important;
+}
+
+/* Reduce product grid top spacing */
+.products-grid-section {
+  padding: 12px 0 40px !important;
+}
+
+/* Make sticky bar more compact overall */
+.sticky-control-bar {
+  top: 64px !important;
+}
+
+/* Responsive: stack toolbar on mobile without extra padding */
+@media (max-width: 900px) {
+  .toolbar-inner {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .toolbar-results {
+    flex: 1;
+  }
+
+  .toolbar-controls {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .products-hero {
+    padding-top: 80px !important;
+    padding-bottom: 30px !important;
+  }
+
+  .products-hero-title {
+    font-size: clamp(1.6rem, 7vw, 2.2rem) !important;
+  }
+
+  .products-hero-search input {
+    padding: 14px 18px 14px 48px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .category-pill {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .products-hero-stats {
+    gap: 24px !important;
+  }
+
+  .hero-stat strong {
+    font-size: 1.3rem !important;
+  }
+}

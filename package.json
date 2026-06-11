@@ -1,0 +1,27 @@
+{
+  "name": "emmytechnology-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pm-check": "node scripts/project-manager-check.mjs",
+    "check": "npm run pm-check && npm run build"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.1",
+    "lucide-react": "^0.468.0",
+    "next": "16.0.10",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.4.5"
+  }
+}
