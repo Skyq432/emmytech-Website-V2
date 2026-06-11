@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic'
+
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -95,8 +97,8 @@ const formatPrice = (price: number) => {
 };
 
 // Strips everything except digits from a WhatsApp URL or phone number
-// e.g. "https://wa.me/2348012345678" → "2348012345678"
-//      "+234 801 234 5678"            → "2348012345678"
+// e.g. "https://wa.me/2348012345678" â†’ "2348012345678"
+//      "+234 801 234 5678"            â†’ "2348012345678"
 const extractWhatsAppNumber = (whatsappValue: string): string => {
   // If it's a wa.me URL, pull the path segment
   const waMe = whatsappValue.match(/wa\.me\/(\d+)/);
@@ -110,20 +112,20 @@ const buildCartWhatsAppUrl = (cart: CartItem[], whatsappValue: string): string =
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const lines = [
-    '🛒 *New Order — Emmy Technology*',
+    'ðŸ›’ *New Order â€” Emmy Technology*',
     '',
     ...cart.map((item, i) => {
       const subtotal = item.price * item.quantity;
       return (
         `${i + 1}. *${item.name}*\n` +
-        `   Qty: ${item.quantity}  ×  ${formatPrice(item.price)}\n` +
+        `   Qty: ${item.quantity}  Ã—  ${formatPrice(item.price)}\n` +
         `   Subtotal: ${formatPrice(subtotal)}`
       );
     }),
     '',
     `*Order Total: ${formatPrice(total)}*`,
     '',
-    'Please confirm availability and delivery details. Thank you! 🙏',
+    'Please confirm availability and delivery details. Thank you! ðŸ™',
   ];
 
   const message = lines.join('\n');
@@ -133,7 +135,7 @@ const buildCartWhatsAppUrl = (cart: CartItem[], whatsappValue: string): string =
 const buildSingleProductWhatsAppUrl = (product: Product, whatsappValue: string): string => {
   const phone = extractWhatsAppNumber(whatsappValue);
   const lines = [
-    `🛍️ *Product Enquiry — Emmy Technology*`,
+    `ðŸ›ï¸ *Product Enquiry â€” Emmy Technology*`,
     '',
     `*${product.name}*`,
     `Category: ${product.category}`,
@@ -142,7 +144,7 @@ const buildSingleProductWhatsAppUrl = (product: Product, whatsappValue: string):
       ? [`Original Price: ${formatPrice(product.original_price)}`]
       : []),
     '',
-    'I\'m interested in this product. Please confirm availability and share delivery details. Thank you! 🙏',
+    'I\'m interested in this product. Please confirm availability and share delivery details. Thank you! ðŸ™',
   ];
 
   const message = lines.join('\n');
@@ -258,7 +260,7 @@ function ProductCard({
         )}
         {product.stock === 0 && <span className="product-stock-out">Out of Stock</span>}
 
-        {/* Inline Add to Cart — always visible, sleek */}
+        {/* Inline Add to Cart â€” always visible, sleek */}
         <button
           className="card-add-to-cart-btn"
           onClick={() => onAddToCart(product)}
@@ -680,7 +682,7 @@ export default function ProductsPage() {
             Find the perfect <span>tech</span> for you.
           </h1>
           <p className="products-hero-desc">
-            Laptops, phones, solar solutions, accessories — all in one place with the best prices in Ibadan.
+            Laptops, phones, solar solutions, accessories â€” all in one place with the best prices in Ibadan.
           </p>
 
           <div className="products-hero-search">
@@ -715,7 +717,7 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* ===== STICKY CONTROL BAR — scroll-aware ===== */}
+      {/* ===== STICKY CONTROL BAR â€” scroll-aware ===== */}
       <div className={`sticky-control-bar ${controlBarVisible ? 'visible' : 'hidden'}`}>
         {/* Single compact row: categories + count + sort + filter toggle */}
         <div className="control-bar-inner section-shell">
@@ -783,7 +785,7 @@ export default function ProductsPage() {
                     value={priceRange[0] || ''}
                     onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
                   />
-                  <span>—</span>
+                  <span>â€”</span>
                   <input
                     type="number"
                     placeholder="Max"
