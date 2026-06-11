@@ -7,7 +7,7 @@ export default function Header() {
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label="Emmy Technology home">
-        <Image src="/images/emmy-logo-blue-text.png" alt="Emmy Technology" width={200} height={60} priority />
+        <Image src="/images\emmy-logo-blue.png" alt="Emmy Technology" width={200} height={60} priority />
       </Link>
 
       <nav className="desktop-nav" aria-label="Primary navigation">

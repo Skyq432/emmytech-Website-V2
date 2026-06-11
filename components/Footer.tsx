@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <Image src="/images/emmy-logo-gold-text.png" alt="Emmy Technology" width={200} height={60} />
+          <Image src="\images\emmy-logo-blue-text.png" alt="Emmy Technology" width={200} height={60} />
           <p>{brand.tagline}</p>
           <p className="footer-motto">Trusted Products. Professional Service. Lasting Solutions.</p>
         </div>
