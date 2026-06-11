@@ -1,6 +1,6 @@
-﻿export const dynamic = 'force-dynamic'
+﻿"use client";
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -904,3 +904,4 @@ export default function ProductsPage() {
     </main>
   );
 }
+
