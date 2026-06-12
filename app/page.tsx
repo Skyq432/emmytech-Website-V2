@@ -185,7 +185,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== PORTFOLIO PREVIEW ===== */}
+          {/* ===== PORTFOLIO PREVIEW ===== */}
       <section className="section-shell dark-section full-bleed portfolio-preview">
         <div>
           <span className="section-tag gold">Portfolio</span>
@@ -194,12 +194,12 @@ export default function Home() {
           <Link className="btn secondary" href="/portfolio">View portfolio</Link>
         </div>
         <div className="portfolio-mini-grid">
-          {portfolioItems.slice(0, 4).map((item, idx) => (
-            <ImageSlot 
-              key={item.title || idx} 
-              imageKey={item.imageKey} 
-              height="sm" 
-              alt={item.title}
+          {['/images/New-image/1.png', '/images/New-image/2.png', '/images/New-image/3.png', '/images/New-image/4.png'].map((src, idx) => (
+            <ImageSlot
+              key={idx}
+              src={src}
+              height="sm"
+              alt={portfolioItems[idx]?.title}
             />
           ))}
         </div>

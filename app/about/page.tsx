@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   MapPin, Users, Award, Target, Lightbulb, 
-  Shield, Zap, MessageCircle
+  Shield, Zap, MessageCircle, Linkedin
 } from 'lucide-react';
 import CTA from '@/components/CTA';
 import SocialLink from '@/components/SocialLink';
@@ -27,9 +27,9 @@ const teamMembers = [
     role: 'Operations Manager',
     image: '/images/KAYODE-GRACE-MODUPE.jpeg',
     socials: {
-      facebook: null,
-      instagram: null,
-      twitter: null,
+      facebook: 'https://www.facebook.com/grace.kayode.796',
+      instagram: 'https://www.instagram.com/grace.kayode.796?igsh=OTNoc2Q5cW94Z3hh',
+      twitter: 'https://x.com/grace_kayo1604',
     }
   },
   {
@@ -39,6 +39,26 @@ const teamMembers = [
     socials: {
       facebook: 'https://www.facebook.com/share/1aWX1Nkfgt/',
       instagram: 'https://www.instagram.com/theonlyhelen1?igsh=cGhiZjRveWJraWli',
+      twitter: null,
+    }
+  },
+  {
+    name: 'Oluwaseun Oyindamola Sobowale',
+    role: 'Sales Manager',
+    image: '/images/Damife.png',
+    socials: {
+      facebook: 'https://www.facebook.com/share/1Hk6hYgpY7/?mibextid=wwXIfr',
+      instagram: 'https://www.instagram.com/damife_s?igsh=anBwOXhtZHlhOW5r&utm_source=qr',
+      twitter: 'https://x.com/sobowaledamife?s=21',
+    }
+  },
+  {
+    name: 'Sulaimon Abdulquddus Olaniyi',
+    role: 'Business Consultant',
+    image: '/images/quddus.png',
+    socials: {
+      facebook: 'https://www.facebook.com/share/1EZXQ9QUCi/',
+      linkedin: 'https://www.linkedin.com/in/sulaimon-abdulquddus-71060a209?utm_source=share_via&utm_content=profile&utm_medium=member_android',
       twitter: null,
     }
   },
@@ -210,25 +230,33 @@ export default function AboutPage() {
                   alt={member.name} 
                   width={360} 
                   height={440} 
-                  className="team-img" 
+                  className={member.name === 'Sulaimon Abdulquddus Olaniyi' ? 'team-img quddus-img' : 'team-img'}
+                  style={member.name === 'Sulaimon Abdulquddus Olaniyi' ? { objectPosition: 'top center' } : undefined}
                 />
                 <div className="team-member-overlay">
                   <div className="team-socials">
                     <SocialLink 
                       platform="facebook"
-                      href={member.socials.facebook} 
+                      href={member.socials.facebook ?? null} 
                       label={`${member.name} on Facebook`}
                     />
                     <SocialLink 
                       platform="instagram"
-                      href={member.socials.instagram} 
+                      href={member.socials.instagram ?? null} 
                       label={`${member.name} on Instagram`}
                     />
                     <SocialLink 
                       platform="twitter"
-                      href={member.socials.twitter} 
+                      href={member.socials.twitter ?? null} 
                       label={`${member.name} on Twitter`}
                     />
+                    {member.socials.linkedin && (
+                      <SocialLink 
+                        platform="linkedin"
+                        href={member.socials.linkedin ?? null} 
+                        label={`${member.name} on LinkedIn`}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

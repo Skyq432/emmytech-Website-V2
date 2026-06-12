@@ -1,15 +1,12 @@
 ﻿"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import "./products.css";
 import {
   ShoppingCart,
   Search,
-  Filter,
   X,
   Plus,
   Minus,
@@ -30,15 +27,19 @@ import {
   Watch,
   Loader2,
   AlertCircle,
-} from 'lucide-react';
-import CTA from '@/components/CTA';
-import { brand } from '@/lib/site-data';
-import { createClient } from '@/lib/supabase/client';
+} from "lucide-react";
+import CTA from "@/components/CTA";
+import { brand } from "@/lib/site-data";
+import { trackingSupabase as supabase, registerVisitor, trackProductView, trackAddToCart } from "@/lib/tracking";
 
-// ==================== SUPABASE CLIENT ====================
-const supabase = createClient();
+interface ProductImage {
+  id?: string;
+  image_url: string;
+  image_path?: string | null;
+  is_primary?: boolean | null;
+  sort_order?: number | null;
+}
 
-// ==================== TYPES ====================
 interface Product {
   id: string;
   name: string;
@@ -48,6 +49,7 @@ interface Product {
   original_price?: number;
   discount?: number;
   image: string;
+  gallery: string[];
   rating: number;
   reviews: number;
   stock: number;
@@ -55,6 +57,8 @@ interface Product {
   specs: Record<string, string>;
   description: string;
   tags: string[];
+  featured: boolean;
+  created_at?: string;
 }
 
 interface CartItem extends Product {
@@ -67,44 +71,45 @@ interface Category {
   icon: React.ReactNode;
 }
 
-// ==================== CATEGORY CONFIG ====================
 const categoryConfig: Record<string, { name: string; icon: React.ReactNode }> = {
-  all: { name: 'All Products', icon: <Package size={16} /> },
-  laptops: { name: 'Laptops', icon: <Laptop size={16} /> },
-  phones: { name: 'Phones', icon: <Smartphone size={16} /> },
-  solar: { name: 'Solar', icon: <Sun size={16} /> },
-  accessories: { name: 'Accessories', icon: <Headphones size={16} /> },
-  cables: { name: 'Cables', icon: <Cable size={16} /> },
-  gaming: { name: 'Gaming', icon: <Gamepad2 size={16} /> },
-  smartwatch: { name: 'Smart Watch', icon: <Watch size={16} /> },
+  all: { name: "All Products", icon: <Package size={16} /> },
+  laptops: { name: "Laptops", icon: <Laptop size={16} /> },
+  phones: { name: "Phones", icon: <Smartphone size={16} /> },
+  solar: { name: "Solar", icon: <Sun size={16} /> },
+  accessories: { name: "Accessories", icon: <Headphones size={16} /> },
+  cables: { name: "Cables", icon: <Cable size={16} /> },
+  gaming: { name: "Gaming", icon: <Gamepad2 size={16} /> },
+  smartwatch: { name: "Smart Watch", icon: <Watch size={16} /> },
+  cctv: { name: "CCTV", icon: <Package size={16} /> },
+  networking: { name: "Networking", icon: <Cable size={16} /> },
+  printers: { name: "Printers", icon: <Package size={16} /> },
+  "biometric-devices": { name: "Biometric Devices", icon: <Package size={16} /> },
 };
 
 const sortOptions = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'price-low', label: 'Price: Low to High' },
-  { value: 'price-high', label: 'Price: High to Low' },
-  { value: 'newest', label: 'Newest Arrivals' },
-  { value: 'rating', label: 'Highest Rated' },
+  { value: "featured", label: "Featured" },
+  { value: "price-low", label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "newest", label: "Newest Arrivals" },
+  { value: "rating", label: "Highest Rated" },
 ];
 
-// ==================== UTILS ====================
+const PLACEHOLDER_IMAGE = "/images/products/placeholder.jpg";
+
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  if (!price || price <= 0) return "Request Quote";
+
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
   }).format(price);
 };
 
-// Strips everything except digits from a WhatsApp URL or phone number
-// e.g. "https://wa.me/2348012345678" â†’ "2348012345678"
-//      "+234 801 234 5678"            â†’ "2348012345678"
 const extractWhatsAppNumber = (whatsappValue: string): string => {
-  // If it's a wa.me URL, pull the path segment
   const waMe = whatsappValue.match(/wa\.me\/(\d+)/);
   if (waMe) return waMe[1];
-  // Otherwise strip all non-digits
-  return whatsappValue.replace(/\D/g, '');
+  return whatsappValue.replace(/\D/g, "");
 };
 
 const buildCartWhatsAppUrl = (cart: CartItem[], whatsappValue: string): string => {
@@ -112,46 +117,124 @@ const buildCartWhatsAppUrl = (cart: CartItem[], whatsappValue: string): string =
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const lines = [
-    'ðŸ›’ *New Order â€” Emmy Technology*',
-    '',
+    "🛒 *New Order — Emmy Technology*",
+    "",
     ...cart.map((item, i) => {
       const subtotal = item.price * item.quantity;
       return (
         `${i + 1}. *${item.name}*\n` +
-        `   Qty: ${item.quantity}  Ã—  ${formatPrice(item.price)}\n` +
+        `   Qty: ${item.quantity} × ${formatPrice(item.price)}\n` +
         `   Subtotal: ${formatPrice(subtotal)}`
       );
     }),
-    '',
+    "",
     `*Order Total: ${formatPrice(total)}*`,
-    '',
-    'Please confirm availability and delivery details. Thank you! ðŸ™',
+    "",
+    "Please confirm availability and delivery details. Thank you!",
   ];
 
-  const message = lines.join('\n');
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join("\n"))}`;
 };
 
 const buildSingleProductWhatsAppUrl = (product: Product, whatsappValue: string): string => {
   const phone = extractWhatsAppNumber(whatsappValue);
+
   const lines = [
-    `ðŸ›ï¸ *Product Enquiry â€” Emmy Technology*`,
-    '',
+    "🛍️ *Product Enquiry — Emmy Technology*",
+    "",
     `*${product.name}*`,
-    `Category: ${product.category}`,
+    `Category: ${product.subcategory || product.category}`,
     `Price: ${formatPrice(product.price)}`,
     ...(product.original_price && product.original_price > product.price
       ? [`Original Price: ${formatPrice(product.original_price)}`]
       : []),
-    '',
-    'I\'m interested in this product. Please confirm availability and share delivery details. Thank you! ðŸ™',
+    ...(product.discount && product.discount > 0 ? [`Discount: ${product.discount}%`] : []),
+    "",
+    "I'm interested in this product. Please confirm availability and delivery details.",
   ];
 
-  const message = lines.join('\n');
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join("\n"))}`;
 };
 
-// ==================== COMPONENTS ====================
+const safeImage = (value?: string | null) => {
+  if (!value || !value.trim()) return PLACEHOLDER_IMAGE;
+  return value;
+};
+
+const titleCase = (value: string) =>
+  value
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const mapProduct = (row: any): Product => {
+  const categorySlug =
+    row.product_categories?.slug ||
+    row.category ||
+    "accessories";
+
+  const categoryName =
+    row.product_categories?.name ||
+    titleCase(categorySlug);
+
+  const productImages: ProductImage[] = Array.isArray(row.product_images)
+    ? row.product_images
+    : [];
+
+  const sortedImages = [...productImages].sort((a, b) => {
+    if (a.is_primary && !b.is_primary) return -1;
+    if (!a.is_primary && b.is_primary) return 1;
+    return Number(a.sort_order || 0) - Number(b.sort_order || 0);
+  });
+
+  const gallery = [
+    row.image_url,
+    ...sortedImages.map((img) => img.image_url),
+  ]
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index) as string[];
+
+  const salePrice = Number(row.sale_price || row.price || 0);
+  const originalPrice = Number(row.original_price || 0);
+  const discount = Number(row.discount_percentage || row.discount || 0);
+
+  const specs: Record<string, string> = {
+    Category: categoryName,
+    Stock: String(Number(row.stock || 0)),
+    Status: row.status || "active",
+  };
+
+  if (row.product_tag) specs.Tag = row.product_tag;
+  if (discount > 0) specs.Discount = `${discount}%`;
+
+  return {
+    id: String(row.id || ""),
+    name: row.name || "Unnamed Product",
+    category: categorySlug,
+    subcategory: categoryName,
+    price: salePrice,
+    original_price: originalPrice > salePrice ? originalPrice : undefined,
+    discount: discount > 0 ? discount : undefined,
+    image: safeImage(gallery[0]),
+    gallery: gallery.length ? gallery.map(safeImage) : [PLACEHOLDER_IMAGE],
+    rating: Number(row.rating || 4.8),
+    reviews: Number(row.reviews || 0),
+    stock: Number(row.stock || 0),
+    badge: row.product_tag || (row.featured ? "Featured Product" : undefined),
+    specs,
+    description:
+      row.description ||
+      "Quality technology product available from Emmy Technology.",
+    tags: [
+      row.name || "",
+      row.product_tag || "",
+      categoryName,
+      categorySlug,
+      row.description || "",
+    ].filter(Boolean),
+    featured: Boolean(row.featured),
+    created_at: row.created_at,
+  };
+};
 
 function LoadingSpinner() {
   return (
@@ -183,8 +266,8 @@ function StarRating({ rating, reviews }: { rating: number; reviews: number }) {
           <Star
             key={star}
             size={13}
-            className={star <= Math.floor(rating) ? 'star-filled' : 'star-empty'}
-            fill={star <= Math.floor(rating) ? 'currentColor' : 'none'}
+            className={star <= Math.floor(rating) ? "star-filled" : "star-empty"}
+            fill={star <= Math.floor(rating) ? "currentColor" : "none"}
           />
         ))}
       </div>
@@ -210,35 +293,39 @@ function ProductCard({
     <div className="product-card-ecom">
       <div className="product-card-image-wrapper">
         <div className="product-card-image">
-          <Image
+          <img
             src={product.image}
             alt={product.name}
-            fill
             className="product-img"
-            sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, 25vw"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/images/products/placeholder.jpg';
+              e.currentTarget.src = PLACEHOLDER_IMAGE;
             }}
           />
         </div>
+
         {product.badge && <span className="product-badge">{product.badge}</span>}
+
         {product.discount && product.discount > 0 && (
           <span className="product-discount-badge">-{product.discount}%</span>
         )}
+
         <button
-          className={`product-wishlist-btn ${isLiked ? 'liked' : ''}`}
+          className={`product-wishlist-btn ${isLiked ? "liked" : ""}`}
           onClick={() => setIsLiked(!isLiked)}
           aria-label="Add to wishlist"
         >
-          <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
+          <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
         </button>
 
-        {/* Hover action bar */}
         <div className="product-card-actions">
           <button className="product-action-btn" onClick={() => onQuickView(product)}>
             Quick View
           </button>
-          <button className="product-action-btn primary" onClick={() => onAddToCart(product)}>
+          <button
+            className="product-action-btn primary"
+            onClick={() => onAddToCart(product)}
+            disabled={product.stock === 0}
+          >
             <ShoppingCart size={14} />
             Add to Cart
           </button>
@@ -246,28 +333,29 @@ function ProductCard({
       </div>
 
       <div className="product-card-body">
-        <span className="product-card-category">{product.category}</span>
+        <span className="product-card-category">{product.subcategory || product.category}</span>
         <h3 className="product-card-name">{product.name}</h3>
         <StarRating rating={product.rating} reviews={product.reviews} />
+
         <div className="product-card-price-row">
           <span className="product-card-price">{formatPrice(product.price)}</span>
           {product.original_price && product.original_price > product.price && (
             <span className="product-card-original">{formatPrice(product.original_price)}</span>
           )}
         </div>
+
         {product.stock <= 5 && product.stock > 0 && (
           <span className="product-stock-low">Only {product.stock} left</span>
         )}
         {product.stock === 0 && <span className="product-stock-out">Out of Stock</span>}
 
-        {/* Inline Add to Cart â€” always visible, sleek */}
         <button
           className="card-add-to-cart-btn"
           onClick={() => onAddToCart(product)}
           disabled={product.stock === 0}
         >
           <ShoppingCart size={15} />
-          <span>Add to Cart</span>
+          <span>{product.stock === 0 ? "Out of Stock" : "Add to Cart"}</span>
         </button>
       </div>
     </div>
@@ -286,13 +374,20 @@ function QuickViewModal({
   onAddToCart: (product: Product) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<'description' | 'specs'>('description');
+  const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
+  const [activeImage, setActiveImage] = useState<string>(PLACEHOLDER_IMAGE);
 
   useEffect(() => {
-    if (isOpen) setQuantity(1);
-  }, [isOpen]);
+    if (isOpen && product) {
+      setQuantity(1);
+      setActiveTab("description");
+      setActiveImage(product.image);
+    }
+  }, [isOpen, product]);
 
   if (!isOpen || !product) return null;
+
+  const canIncrease = product.stock === 0 ? false : quantity < product.stock;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -300,49 +395,100 @@ function QuickViewModal({
         <button className="modal-close" onClick={onClose}>
           <X size={20} />
         </button>
+
         <div className="modal-grid">
           <div className="modal-image">
-            <Image
-              src={product.image}
+            <img
+              src={activeImage}
               alt={product.name}
-              fill
               className="modal-img"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/products/placeholder.jpg';
+                e.currentTarget.src = PLACEHOLDER_IMAGE;
               }}
             />
+
             {product.discount && product.discount > 0 && (
               <span className="modal-discount">-{product.discount}%</span>
             )}
+
+            {product.gallery.length > 1 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  right: 14,
+                  bottom: 14,
+                  display: "flex",
+                  gap: 8,
+                  overflowX: "auto",
+                  zIndex: 4,
+                }}
+              >
+                {product.gallery.map((image) => (
+                  <button
+                    key={image}
+                    onClick={() => setActiveImage(image)}
+                    style={{
+                      width: 54,
+                      height: 54,
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      border:
+                        activeImage === image
+                          ? "2px solid var(--product-secondary)"
+                          : "2px solid rgba(255,255,255,0.75)",
+                      padding: 0,
+                      background: "#fff",
+                      cursor: "pointer",
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    <img
+                      src={image}
+                      alt={product.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => {
+                        e.currentTarget.src = PLACEHOLDER_IMAGE;
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="modal-details">
-            <span className="modal-category">{product.category}</span>
+            <span className="modal-category">{product.subcategory || product.category}</span>
             <h2 className="modal-title">{product.name}</h2>
             <StarRating rating={product.rating} reviews={product.reviews} />
+
             <div className="modal-price-row">
               <span className="modal-price">{formatPrice(product.price)}</span>
               {product.original_price && product.original_price > product.price && (
                 <span className="modal-original">{formatPrice(product.original_price)}</span>
               )}
             </div>
+
             <p className="modal-description">{product.description}</p>
 
             <div className="modal-tabs">
               <button
-                className={activeTab === 'description' ? 'active' : ''}
-                onClick={() => setActiveTab('description')}
+                className={activeTab === "description" ? "active" : ""}
+                onClick={() => setActiveTab("description")}
               >
                 Description
               </button>
               <button
-                className={activeTab === 'specs' ? 'active' : ''}
-                onClick={() => setActiveTab('specs')}
+                className={activeTab === "specs" ? "active" : ""}
+                onClick={() => setActiveTab("specs")}
               >
                 Specifications
               </button>
             </div>
 
-            {activeTab === 'specs' && (
+            {activeTab === "description" ? (
+              <p className="modal-description">{product.description}</p>
+            ) : (
               <div className="modal-specs">
                 {Object.entries(product.specs).map(([key, value]) => (
                   <div key={key} className="spec-row">
@@ -360,18 +506,31 @@ function QuickViewModal({
                   <Minus size={14} />
                 </button>
                 <span>{quantity}</span>
-                <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}>
+                <button onClick={() => canIncrease && setQuantity(quantity + 1)}>
                   <Plus size={14} />
                 </button>
               </div>
             </div>
 
             <div className="modal-buttons">
-              <button className="btn primary modal-add" onClick={() => onAddToCart(product)}>
+              <button
+                className="btn primary modal-add"
+                onClick={() => {
+                  if (product.stock === 0) return;
+                  for (let i = 0; i < quantity; i += 1) onAddToCart(product);
+                }}
+                disabled={product.stock === 0}
+              >
                 <ShoppingCart size={16} />
-                Add to Cart
+                {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
               </button>
-              <a href={buildSingleProductWhatsAppUrl(product, brand.whatsapp)} target="_blank" rel="noopener noreferrer" className="btn secondary modal-whatsapp">
+
+              <a
+                href={buildSingleProductWhatsAppUrl(product, brand.whatsapp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn secondary modal-whatsapp"
+              >
                 <Zap size={16} />
                 Buy on WhatsApp
               </a>
@@ -398,12 +557,12 @@ function CartDrawer({
 }) {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const checkoutUrl = cart.length > 0 ? buildCartWhatsAppUrl(cart, brand.whatsapp) : '#';
+  const checkoutUrl = cart.length > 0 ? buildCartWhatsAppUrl(cart, brand.whatsapp) : "#";
 
   return (
     <>
-      <div className={`cart-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
-      <div className={`cart-drawer ${isOpen ? 'open' : ''}`}>
+      <div className={`cart-overlay ${isOpen ? "open" : ""}`} onClick={onClose} />
+      <div className={`cart-drawer ${isOpen ? "open" : ""}`}>
         <div className="cart-header">
           <h3>
             <ShoppingCart size={18} />
@@ -426,16 +585,16 @@ function CartDrawer({
               {cart.map((item) => (
                 <div key={item.id} className="cart-item">
                   <div className="cart-item-image">
-                    <Image
+                    <img
                       src={item.image}
                       alt={item.name}
-                      fill
                       className="cart-img"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/products/placeholder.jpg';
+                        e.currentTarget.src = PLACEHOLDER_IMAGE;
                       }}
                     />
                   </div>
+
                   <div className="cart-item-details">
                     <h4>{item.name}</h4>
                     <span className="cart-item-price">{formatPrice(item.price)}</span>
@@ -463,22 +622,12 @@ function CartDrawer({
                 <span>Subtotal</span>
                 <span>{formatPrice(total)}</span>
               </div>
-              <p className="cart-note">Shipping and taxes calculated at checkout</p>
-              <a
-                href={checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn primary cart-checkout"
-              >
+              <p className="cart-note">Shipping and availability will be confirmed by EmmyTech.</p>
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn primary cart-checkout">
                 <ShoppingCart size={16} />
                 Proceed to Checkout
               </a>
-              <a
-                href={checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn secondary cart-whatsapp"
-              >
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn secondary cart-whatsapp">
                 <Zap size={15} />
                 Complete on WhatsApp
               </a>
@@ -493,30 +642,26 @@ function CartDrawer({
   );
 }
 
-// ==================== MAIN PAGE ====================
 export default function ProductsPage() {
-  // ===== DATA STATE =====
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([
+    { id: "all", name: "All Products", icon: <Package size={16} /> },
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ===== FILTER STATE =====
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('featured');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("featured");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // ===== CART STATE =====
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // ===== MODAL STATE =====
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showQuickView, setShowQuickView] = useState(false);
 
-  // ===== SCROLL-AWARE CONTROL BAR =====
   const [controlBarVisible, setControlBarVisible] = useState(true);
   const lastScrollY = useRef(0);
   const scrollTicking = useRef(false);
@@ -526,12 +671,11 @@ export default function ProductsPage() {
       if (!scrollTicking.current) {
         window.requestAnimationFrame(() => {
           const currentY = window.scrollY;
-          // Show bar when scrolling up or near top; hide when scrolling down past 120px
           if (currentY < 120 || currentY < lastScrollY.current) {
             setControlBarVisible(true);
           } else if (currentY > lastScrollY.current + 6) {
             setControlBarVisible(false);
-            setShowFilters(false); // close filter panel too
+            setShowFilters(false);
           }
           lastScrollY.current = currentY;
           scrollTicking.current = false;
@@ -540,57 +684,76 @@ export default function ProductsPage() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ===== FETCH PRODUCTS FROM SUPABASE =====
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const referralCode =
+      params.get("ref") ||
+      params.get("code") ||
+      params.get("ambassador") ||
+      localStorage.getItem("emmy_referral_code");
+
+    if (referralCode) {
+      localStorage.setItem("emmy_referral_code", referralCode);
+    }
+
+    registerVisitor(referralCode);
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const { data, error: supaError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active');
+        .from("products")
+        .select(`
+          *,
+          product_categories (
+            id,
+            name,
+            slug
+          ),
+          product_images (
+            id,
+            image_url,
+            image_path,
+            is_primary,
+            sort_order
+          )
+        `)
+        .eq("status", "active")
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (supaError) throw new Error(supaError.message);
 
-      const mapped: Product[] = (data || []).map((row: any) => ({
-        id: row.id?.toString() || '',
-        name: row.name || 'Unnamed Product',
-        category: row.category || 'uncategorized',
-        subcategory: row.subcategory || '',
-        price: Number(row.price) || 0,
-        original_price: row.original_price ? Number(row.original_price) : undefined,
-        discount: row.discount ? Number(row.discount) : undefined,
-        image: row.image || '/images/products/placeholder.jpg',
-        rating: Number(row.rating) || 0,
-        reviews: Number(row.reviews) || 0,
-        stock: Number(row.stock) || 0,
-        badge: row.badge || undefined,
-        specs: row.specs || {},
-        description: row.description || '',
-        tags: Array.isArray(row.tags) ? row.tags : [],
-      }));
-
+      const mapped = (data || []).map(mapProduct);
       setProducts(mapped);
 
-      const uniqueCats = Array.from(new Set(mapped.map((p) => p.category)));
-      const builtCategories: Category[] = [
-        { id: 'all', name: 'All Products', icon: <Package size={16} /> },
-        ...uniqueCats
-          .filter((c) => c && c !== 'uncategorized')
-          .map((cat) => ({
-            id: cat,
-            name: categoryConfig[cat]?.name || cat.charAt(0).toUpperCase() + cat.slice(1),
-            icon: categoryConfig[cat]?.icon || <Package size={16} />,
-          })),
-      ];
-      setCategories(builtCategories);
+      const categoryMap = new Map<string, Category>();
+      categoryMap.set("all", { id: "all", name: "All Products", icon: <Package size={16} /> });
+
+      mapped.forEach((product) => {
+        if (!categoryMap.has(product.category)) {
+          categoryMap.set(product.category, {
+            id: product.category,
+            name:
+              categoryConfig[product.category]?.name ||
+              product.subcategory ||
+              titleCase(product.category),
+            icon: categoryConfig[product.category]?.icon || <Package size={16} />,
+          });
+        }
+      });
+
+      setCategories(Array.from(categoryMap.values()));
     } catch (err: any) {
-      setError(err.message || 'Failed to load products');
-      console.error('Supabase fetch error:', err);
+      setError(err.message || "Failed to load products");
+      console.error("Supabase fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -600,29 +763,40 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // ===== CART ACTIONS =====
   const addToCart = useCallback((product: Product) => {
+    if (product.stock === 0) return;
+
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        if (existing.quantity >= product.stock) return prev;
         return prev.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+
+    trackAddToCart(product.id, 1);
     setIsCartOpen(true);
   }, []);
 
-  const updateQuantity = useCallback((id: string, qty: number) => {
-    if (qty <= 0) {
-      setCart((prev) => prev.filter((item) => item.id !== id));
-    } else {
+  const updateQuantity = useCallback(
+    (id: string, qty: number) => {
+      if (qty <= 0) {
+        setCart((prev) => prev.filter((item) => item.id !== id));
+        return;
+      }
+
       setCart((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          return { ...item, quantity: Math.min(qty, item.stock || qty) };
+        })
       );
-    }
-  }, []);
+    },
+    []
+  );
 
   const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
@@ -631,58 +805,81 @@ export default function ProductsPage() {
   const openQuickView = useCallback((product: Product) => {
     setQuickViewProduct(product);
     setShowQuickView(true);
+    trackProductView(product.id);
   }, []);
 
   const closeQuickView = useCallback(() => {
     setShowQuickView(false);
-    setTimeout(() => setQuickViewProduct(null), 300);
+    setTimeout(() => setQuickViewProduct(null), 250);
   }, []);
 
-  // ===== FILTERED PRODUCTS =====
   const filteredProducts = useMemo(() => {
     let result = [...products];
-    if (activeCategory !== 'all') result = result.filter((p) => p.category === activeCategory);
+
+    if (activeCategory !== "all") {
+      result = result.filter((product) => product.category === activeCategory);
+    }
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.tags.some((t) => t.toLowerCase().includes(q))
+        (product) =>
+          product.name.toLowerCase().includes(q) ||
+          product.category.toLowerCase().includes(q) ||
+          product.subcategory.toLowerCase().includes(q) ||
+          product.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     }
-    result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+
+    result = result.filter(
+      (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
+    );
+
     switch (sortBy) {
-      case 'price-low': result.sort((a, b) => a.price - b.price); break;
-      case 'price-high': result.sort((a, b) => b.price - a.price); break;
-      case 'rating': result.sort((a, b) => b.rating - a.rating); break;
-      case 'newest': result.sort((a, b) => (b.id > a.id ? 1 : -1)); break;
+      case "price-low":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case "rating":
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+      case "newest":
+        result.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+        break;
+      case "featured":
+      default:
+        result.sort((a, b) => Number(b.featured) - Number(a.featured));
+        break;
     }
+
     return result;
   }, [products, activeCategory, searchQuery, sortBy, priceRange]);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // ===== RENDER =====
   return (
     <main className="products-page">
-      {/* ===== HERO ===== */}
       <section className="products-hero">
         <div className="products-hero-bg">
           <div className="hero-orb orb-1" />
           <div className="hero-orb orb-2" />
           <div className="hero-orb orb-3" />
         </div>
+
         <div className="section-shell products-hero-content">
           <span className="products-hero-eyebrow">
             <Package size={13} />
             Emmy Tech Store
           </span>
+
           <h1 className="products-hero-title">
             Find the perfect <span>tech</span> for you.
           </h1>
+
           <p className="products-hero-desc">
-            Laptops, phones, solar solutions, accessories â€” all in one place with the best prices in Ibadan.
+            Laptops, phones, solar solutions, accessories — all in one place with the best prices in Ibadan.
           </p>
 
           <div className="products-hero-search">
@@ -694,7 +891,7 @@ export default function ProductsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button className="search-clear" onClick={() => setSearchQuery('')}>
+              <button className="search-clear" onClick={() => setSearchQuery("")}>
                 <X size={16} />
               </button>
             )}
@@ -706,7 +903,7 @@ export default function ProductsPage() {
               <span>Products</span>
             </div>
             <div className="hero-stat">
-              <strong>{categories.length - 1}+</strong>
+              <strong>{Math.max(categories.length - 1, 0)}+</strong>
               <span>Categories</span>
             </div>
             <div className="hero-stat">
@@ -717,16 +914,13 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* ===== STICKY CONTROL BAR â€” scroll-aware ===== */}
-      <div className={`sticky-control-bar ${controlBarVisible ? 'visible' : 'hidden'}`}>
-        {/* Single compact row: categories + count + sort + filter toggle */}
+      <div className={`sticky-control-bar ${controlBarVisible ? "visible" : "hidden"}`}>
         <div className="control-bar-inner section-shell">
-          {/* Category pills */}
           <div className="category-bar">
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                className={`category-pill ${activeCategory === cat.id ? 'active' : ''}`}
+                className={`category-pill ${activeCategory === cat.id ? "active" : ""}`}
                 onClick={() => setActiveCategory(cat.id)}
               >
                 {cat.icon}
@@ -735,17 +929,16 @@ export default function ProductsPage() {
             ))}
           </div>
 
-          {/* Right controls */}
           <div className="bar-right-controls">
-            {/* Active filter chips */}
-            {activeCategory !== 'all' && (
-              <button className="filter-chip" onClick={() => setActiveCategory('all')}>
-                {categories.find((c) => c.id === activeCategory)?.name}
+            {activeCategory !== "all" && (
+              <button className="filter-chip" onClick={() => setActiveCategory("all")}>
+                {categories.find((category) => category.id === activeCategory)?.name}
                 <X size={12} />
               </button>
             )}
+
             {searchQuery && (
-              <button className="filter-chip" onClick={() => setSearchQuery('')}>
+              <button className="filter-chip" onClick={() => setSearchQuery("")}>
                 &quot;{searchQuery}&quot;
                 <X size={12} />
               </button>
@@ -756,14 +949,16 @@ export default function ProductsPage() {
             <div className="sort-dropdown">
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 {sortOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
               </select>
               <ChevronDown size={12} className="sort-arrow" />
             </div>
 
             <button
-              className={`toolbar-btn ${showFilters ? 'active' : ''}`}
+              className={`toolbar-btn ${showFilters ? "active" : ""}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <SlidersHorizontal size={14} />
@@ -772,8 +967,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Collapsible filter panel */}
-        <div className={`filter-panel-wrap ${showFilters ? 'open' : ''}`}>
+        <div className={`filter-panel-wrap ${showFilters ? "open" : ""}`}>
           <div className="section-shell">
             <div className="filter-panel">
               <div className="filter-group">
@@ -782,21 +976,21 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     placeholder="Min"
-                    value={priceRange[0] || ''}
+                    value={priceRange[0] || ""}
                     onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
                   />
-                  <span>â€”</span>
+                  <span>—</span>
                   <input
                     type="number"
                     placeholder="Max"
-                    value={priceRange[1] || ''}
+                    value={priceRange[1] || ""}
                     onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                   />
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="1000000"
+                  max="10000000"
                   step="10000"
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
@@ -807,9 +1001,13 @@ export default function ProductsPage() {
                   <span>{formatPrice(priceRange[1])}</span>
                 </div>
               </div>
+
               <button
                 className="filter-reset"
-                onClick={() => { setPriceRange([0, 1000000]); setShowFilters(false); }}
+                onClick={() => {
+                  setPriceRange([0, 10000000]);
+                  setShowFilters(false);
+                }}
               >
                 Reset
               </button>
@@ -818,13 +1016,11 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* ===== STICKY CART FAB ===== */}
       <button className="cart-fab" onClick={() => setIsCartOpen(true)}>
         <ShoppingCart size={20} />
         {cartItemCount > 0 && <span className="cart-fab-badge">{cartItemCount}</span>}
       </button>
 
-      {/* ===== PRODUCT GRID ===== */}
       <section className="products-grid-section">
         <div className="section-shell">
           {loading ? (
@@ -849,7 +1045,11 @@ export default function ProductsPage() {
               <p>Try adjusting your search or filters</p>
               <button
                 className="btn primary"
-                onClick={() => { setSearchQuery(''); setActiveCategory('all'); setPriceRange([0, 1000000]); }}
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveCategory("all");
+                  setPriceRange([0, 10000000]);
+                }}
               >
                 Clear All Filters
               </button>
@@ -858,24 +1058,31 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* ===== TRUST BANNER ===== */}
       <section className="trust-banner-section">
         <div className="section-shell">
           <div className="trust-banner">
             <h2>Why shop with Emmy Technology?</h2>
             <div className="trust-grid">
               <div className="trust-item">
-                <div className="trust-icon"><Check size={22} /></div>
+                <div className="trust-icon">
+                  <Check size={22} />
+                </div>
                 <strong>Tested & Verified</strong>
                 <span>Every device is fully tested before sale</span>
               </div>
+
               <div className="trust-item">
-                <div className="trust-icon"><Zap size={22} /></div>
+                <div className="trust-icon">
+                  <Zap size={22} />
+                </div>
                 <strong>Fast Delivery</strong>
                 <span>Same-day delivery within Ibadan</span>
               </div>
+
               <div className="trust-item">
-                <div className="trust-icon"><Package size={22} /></div>
+                <div className="trust-icon">
+                  <Package size={22} />
+                </div>
                 <strong>Warranty Included</strong>
                 <span>30-day warranty on all products</span>
               </div>
@@ -886,7 +1093,6 @@ export default function ProductsPage() {
 
       <CTA />
 
-      {/* ===== MODALS ===== */}
       <QuickViewModal
         product={quickViewProduct}
         isOpen={showQuickView}
@@ -904,4 +1110,3 @@ export default function ProductsPage() {
     </main>
   );
 }
-

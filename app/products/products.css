@@ -1484,3 +1484,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* FINAL IMAGE DISPLAY FIX */
+.products-page .product-img,
+.products-page .modal-img,
+.products-page .cart-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.products-page .product-card-image,
+.products-page .product-card-image-wrapper,
+.products-page .modal-image,
+.products-page .cart-item-image {
+  position: relative;
+  overflow: hidden;
+}
