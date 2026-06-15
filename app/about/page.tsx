@@ -2,24 +2,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   MapPin, Users, Award, Target, Lightbulb, 
-  Shield, Zap, MessageCircle, Linkedin
+  Shield, Zap, MessageCircle
 } from 'lucide-react';
 import CTA from '@/components/CTA';
 import SocialLink from '@/components/SocialLink';
 import { brand, values } from '@/lib/site-data';
 
-export const metadata = { title: 'About Us | Emmy Technology — Trusted Tech Brand in Ibadan' };
+export const metadata = { title: 'About Us | Emmy Technology — Trusted Tech Brand in Nigeria' };
 
-// Team data - easy to add more later
 const teamMembers = [
   {
     name: 'Emmanuel',
     role: 'Founder & Lead Technician',
-    image: '/images/emmanual.png',
-    socials: {
-      facebook: null,
-      instagram: null,
-      twitter: null,
+    image: '/images/emmanualpic.jpeg',
+    socials: { 
+      facebook: 'https://www.facebook.com/olanrewajuemma.bunmi', 
+      instagram: 'https://www.instagram.com/emmytechofficial?igsh=MWxoMW1lZ2JmaGJvdA==', 
+      twitter: 'https://x.com/Emmytech25', 
+      linkedin: 'https://www.linkedin.com/in/bunmi-e-olanrewaju-a001541b4?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app' 
     }
   },
   {
@@ -30,6 +30,7 @@ const teamMembers = [
       facebook: 'https://www.facebook.com/grace.kayode.796',
       instagram: 'https://www.instagram.com/grace.kayode.796?igsh=OTNoc2Q5cW94Z3hh',
       twitter: 'https://x.com/grace_kayo1604',
+      linkedin: null
     }
   },
   {
@@ -40,6 +41,7 @@ const teamMembers = [
       facebook: 'https://www.facebook.com/share/1aWX1Nkfgt/',
       instagram: 'https://www.instagram.com/theonlyhelen1?igsh=cGhiZjRveWJraWli',
       twitter: null,
+      linkedin: null
     }
   },
   {
@@ -50,6 +52,7 @@ const teamMembers = [
       facebook: 'https://www.facebook.com/share/1Hk6hYgpY7/?mibextid=wwXIfr',
       instagram: 'https://www.instagram.com/damife_s?igsh=anBwOXhtZHlhOW5r&utm_source=qr',
       twitter: 'https://x.com/sobowaledamife?s=21',
+      linkedin: null
     }
   },
   {
@@ -58,13 +61,13 @@ const teamMembers = [
     image: '/images/quddus.png',
     socials: {
       facebook: 'https://www.facebook.com/share/1EZXQ9QUCi/',
-      linkedin: 'https://www.linkedin.com/in/sulaimon-abdulquddus-71060a209?utm_source=share_via&utm_content=profile&utm_medium=member_android',
+      instagram: 'https://www.instagram.com/olaniyi.sq?igsh=MWNha2lmZmhtamRvdA==',
       twitter: null,
+      linkedin: 'https://www.linkedin.com/in/sulaimon-abdulquddus-71060a209?utm_source=share_via&utm_content=profile&utm_medium=member_android'
     }
   },
 ];
 
-// Story photos - FIXED: Using only images that actually exist in your folder
 const storyImages = {
   main: '/images/image%202.png',
   side: '/images/image3.png',
@@ -74,7 +77,7 @@ const storyImages = {
 export default function AboutPage() {
   return (
     <main>
-      {/* ===== UNIQUE HERO — Split Asymmetric ===== */}
+      {/* ===== HERO ===== */}
       <section className="about-hero-unique">
         <div className="about-hero-unique-inner section-shell">
           <div className="about-hero-unique-text">
@@ -103,8 +106,7 @@ export default function AboutPage() {
               <Image 
                 src="/images/emmytechsingleimage.jpg" 
                 alt="Emmy Technology at work" 
-                width={520} 
-                height={620} 
+                fill
                 className="hero-img-primary" 
                 priority 
               />
@@ -113,8 +115,7 @@ export default function AboutPage() {
               <Image 
                 src="/images/image1.png"
                 alt="Emmy Technology team member" 
-                width={200} 
-                height={240} 
+                fill
                 className="hero-img-secondary" 
               />
             </div>
@@ -126,7 +127,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ===== OUR STORY — With Spice Photos ===== */}
+      {/* ===== STORY ===== */}
       <section className="section-shell story-section">
         <div className="story-layout">
           <div className="story-images-cluster">
@@ -134,8 +135,7 @@ export default function AboutPage() {
               <Image 
                 src={storyImages.main}
                 alt="Emmy Technology team collaboration" 
-                width={400} 
-                height={500} 
+                fill
                 className="story-img" 
               />
             </div>
@@ -143,8 +143,7 @@ export default function AboutPage() {
               <Image 
                 src={storyImages.side}
                 alt="Emmy Technology professional" 
-                width={220} 
-                height={280} 
+                fill
                 className="story-img" 
               />
             </div>
@@ -152,17 +151,16 @@ export default function AboutPage() {
               <Image 
                 src={storyImages.accent}
                 alt="Emmy Technology workspace" 
-                width={180} 
-                height={220} 
+                fill
                 className="story-img" 
               />
             </div>
           </div>
           <div className="story-content">
             <span className="section-tag">Our Story</span>
-            <h2>From a single desk to two thriving locations.</h2>
+            <h2>From a single desk to multiple thriving locations and beyond.</h2>
             <p>Emmy Technology started with a simple belief: everyone deserves access to genuine technology, clear advice and dependable support. What began as a small operation helping students find reliable laptops has grown into a full-service technology company with presence at the University of Ibadan and Sango.</p>
-            <p>Today, we serve hundreds of customers across Ibadan — from undergraduates needing their first laptop to businesses requiring complete solar power setups. Every device we sell, every repair we complete and every installation we deliver carries the same promise: quality you can trust, service you can depend on.</p>
+            <p>Today, we serve hundreds of customers across Ibadan — from undergraduates needing their first laptop to businesses requiring complete solar power setups. Every device we sell, every repair we complete and every installation we delivers carries the same promise: quality you can trust, service you can depend on.</p>
             <div className="story-highlights">
               <div className="story-highlight">
                 <Target size={20} />
@@ -192,16 +190,16 @@ export default function AboutPage() {
           <article className="mission-card">
             <div className="mission-icon"><Award size={28} /></div>
             <h3>Our Vision</h3>
-            <p>To become Nigeria's most trusted local technology brand — known not just for what we sell, but for how we treat every customer. We want Emmy Technology to be the first name people think of when they need tech they can rely on.</p>
+            <p>To become Nigeria&apos;s most trusted local technology brand — known not just for what we sell, but for how we treat every customer. We want Emmy Technology to be the first name people think of when they need tech they can rely on.</p>
           </article>
         </div>
       </section>
 
-      {/* ===== CORE VALUES ===== */}
+      {/* ===== VALUES ===== */}
       <section className="section-shell">
         <div className="section-heading">
           <span className="section-tag">What We Stand For</span>
-          <h2>The values behind every interaction.</h2>
+          <h2>Nigeria&apos;s Most Trusted Tech Partner</h2>
         </div>
         <div className="values-grid">
           {values.map(({ title, text, icon: Icon }) => (
@@ -214,88 +212,63 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ===== THE TEAM ===== */}
+      {/* ===== TEAM — HORIZONTAL CAROUSEL ===== */}
       <section className="section-shell team-section">
         <div className="section-heading">
           <span className="section-tag">The People</span>
           <h2>Meet the team behind Emmy Technology.</h2>
           <p>A passionate team of engineers, technicians and customer support specialists working to bring you the best technology experience in Ibadan.</p>
         </div>
-        <div className="team-grid">
-          {teamMembers.map((member) => (
-            <div className="team-member-card" key={member.name}>
-              <div className="team-member-image">
-                <Image 
-                  src={member.image} 
-                  alt={member.name} 
-                  width={360} 
-                  height={440} 
-                  className={member.name === 'Sulaimon Abdulquddus Olaniyi' ? 'team-img quddus-img' : 'team-img'}
-                  style={member.name === 'Sulaimon Abdulquddus Olaniyi' ? { objectPosition: 'top center' } : undefined}
-                />
-                <div className="team-member-overlay">
-                  <div className="team-socials">
-                    <SocialLink 
-                      platform="facebook"
-                      href={member.socials.facebook ?? null} 
-                      label={`${member.name} on Facebook`}
-                    />
-                    <SocialLink 
-                      platform="instagram"
-                      href={member.socials.instagram ?? null} 
-                      label={`${member.name} on Instagram`}
-                    />
-                    <SocialLink 
-                      platform="twitter"
-                      href={member.socials.twitter ?? null} 
-                      label={`${member.name} on Twitter`}
-                    />
-                    {member.socials.linkedin && (
+        <div className="team-carousel-wrapper">
+          <div className="team-carousel-track">
+            {[...teamMembers, ...teamMembers].map((member, idx) => (
+              <div className="team-member-card" key={`${idx}-${member.name}`}>
+                <div className="team-member-image">
+                  <Image 
+                    src={member.image} 
+                    alt={member.name} 
+                    fill
+                    className="team-img"
+                    style={{ objectPosition: 'top center' }}
+                  />
+                  <div className="team-member-overlay">
+                    <div className="team-socials">
                       <SocialLink 
-                        platform="linkedin"
-                        href={member.socials.linkedin ?? null} 
-                        label={`${member.name} on LinkedIn`}
+                        platform="facebook"
+                        href={member.socials.facebook ?? null} 
+                        label={`${member.name} on Facebook`}
                       />
-                    )}
+                      <SocialLink 
+                        platform="instagram"
+                        href={member.socials.instagram ?? null} 
+                        label={`${member.name} on Instagram`}
+                      />
+                      <SocialLink 
+                        platform="twitter"
+                        href={member.socials.twitter ?? null} 
+                        label={`${member.name} on Twitter`}
+                      />
+                      {member.socials.linkedin && (
+                        <SocialLink 
+                          platform="linkedin"
+                          href={member.socials.linkedin} 
+                          label={`${member.name} on LinkedIn`}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="team-member-info">
+                  <strong>{member.name}</strong>
+                  <span>{member.role}</span>
+                </div>
               </div>
-              <div className="team-member-info">
-                <strong>{member.name}</strong>
-                <span>{member.role}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         <div className="team-more-coming">
           <MessageCircle size={18} />
           <span>More team members joining soon. Stay tuned.</span>
-        </div>
-      </section>
-
-      {/* ===== LOCATIONS ===== */}
-      <section className="section-shell locations-section">
-        <div className="locations-card">
-          <div className="locations-text">
-            <span className="section-tag">Visit Us</span>
-            <h2>Two locations, one standard of excellence.</h2>
-            <p>Walk into any Emmy Technology branch and get the same genuine products, expert advice and professional service.</p>
-            <div className="locations-list">
-              {brand.branches.map((branch) => (
-                <div className="location-item" key={branch}>
-                  <MapPin size={18} />
-                  <span>{branch}</span>
-                </div>
-              ))}
-            </div>
-            <Link className="btn primary" href="/contact">Get Directions</Link>
-          </div>
-          <div className="locations-visual">
-            <div className="location-badge">
-              <Users size={20} />
-              <span>Open Mon–Sat</span>
-            </div>
-          </div>
         </div>
       </section>
 

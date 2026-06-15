@@ -407,7 +407,7 @@ export default function PortfolioPage() {
       <section className="section-shell soft-section full-bleed">
         <div className="portfolio-stats">
           <div className="stat-item">
-            <span className="stat-number">500+</span>
+            <span className="stat-number">800+</span>
             <span className="stat-label">Happy Customers</span>
           </div>
           <div className="stat-divider" />
@@ -417,7 +417,7 @@ export default function PortfolioPage() {
           </div>
           <div className="stat-divider" />
           <div className="stat-item">
-            <span className="stat-number">6+</span>
+            <span className="stat-number">5+</span>
             <span className="stat-label">Years Serving Ibadan</span>
           </div>
           <div className="stat-divider" />

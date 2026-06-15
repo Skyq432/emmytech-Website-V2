@@ -103,6 +103,11 @@ img { max-width: 100%; height: auto; display: block; }
   overflow: hidden;
 }
 
+/* Add this separately — only for header CTA */
+.header-cta {
+  white-space: nowrap;
+}
+
 .header-cta, .btn.primary {
   background: var(--primary);
   color: white;
@@ -1557,6 +1562,685 @@ p { color: var(--muted); line-height: 1.7; font-size: 1rem; font-weight: 400; }
 
 .hero-badge-float svg {
   color: var(--secondary);
+}
+
+/* ===== STORY SECTION — IMAGE CLUSTER ===== */
+.story-section {
+  padding-top: 40px;
+}
+
+.story-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.story-images-cluster {
+  position: relative;
+  height: 560px;
+}
+
+.story-img-main {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 400px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  transform: rotate(-1deg);
+}
+
+.story-img-side {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  width: 220px;
+  height: 280px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 4px solid white;
+  transform: rotate(2deg);
+  z-index: 2;
+}
+
+.story-img-accent {
+  position: absolute;
+  bottom: 40px;
+  left: 80px;
+  width: 180px;
+  height: 220px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 4px solid white;
+  transform: rotate(-2deg);
+  z-index: 3;
+}
+
+.story-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.story-content h2 {
+  margin-bottom: 20px;
+}
+
+.story-content > p {
+  margin-bottom: 16px;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.story-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.story-highlight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--soft);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-weight: 500;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.story-highlight svg {
+  color: var(--secondary);
+  flex: none;
+}
+
+/* ===== MISSION & VISION ===== */
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.mission-card {
+  background: white;
+  border: 1px solid #e8ecf5;
+  border-radius: var(--radius);
+  padding: 40px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.mission-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: #d4ddf0;
+}
+
+.mission-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--primary);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  transition: var(--transition-fast);
+}
+
+.mission-card:hover .mission-icon {
+  background: var(--primary);
+  color: white;
+}
+
+.mission-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+}
+
+.mission-card p {
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+/* ===== VALUES ===== */
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.value-card {
+  background: white;
+  border: 1px solid #e8ecf5;
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.value-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: #d4ddf0;
+}
+
+.value-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--primary);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  transition: var(--transition-fast);
+}
+
+.value-card:hover .value-icon {
+  background: var(--primary);
+  color: white;
+}
+
+.value-card strong {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.value-card p {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ===== TEAM — HORIZONTAL SCROLLING CAROUSEL ===== */
+.team-section {
+  padding-top: 20px;
+  overflow: hidden;
+}
+
+.team-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 20px 0;
+}
+
+.team-carousel-track {
+  display: flex;
+  gap: 24px;
+  animation: teamScroll 25s linear infinite;
+  width: max-content;
+}
+
+.team-carousel-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes teamScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.team-member-card {
+  flex: 0 0 280px;
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid #e8ecf5;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.team-member-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow);
+  border-color: #d4ddf0;
+}
+
+.team-member-image {
+  position: relative;
+  height: 360px;
+  overflow: hidden;
+  aspect-ratio: 3/4;
+}
+
+.team-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.team-member-card:hover .team-img {
+  transform: scale(1.05);
+}
+
+.team-member-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(3, 36, 137, 0.9) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 20px;
+}
+
+.team-member-card:hover .team-member-overlay {
+  opacity: 1;
+}
+
+.team-socials {
+  display: flex;
+  gap: 10px;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.team-member-card:hover .team-socials {
+  transform: translateY(0);
+}
+
+.team-social-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--primary);
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.team-social-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.team-social-disabled {
+  background: rgba(255, 255, 255, 0.7);
+  color: #94a3b8;
+  cursor: help;
+}
+
+.team-social-disabled:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--secondary);
+}
+
+.team-member-info {
+  padding: 20px 24px;
+}
+
+.team-member-info strong {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.team-member-info span {
+  font-size: 0.88rem;
+  color: #6b7b8f;
+}
+
+.team-more-coming {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 40px;
+  padding: 16px 24px;
+  background: var(--soft);
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.team-more-coming svg {
+  color: var(--secondary);
+}
+
+/* ===== LOCATIONS ===== */
+.locations-section {
+  padding-bottom: 20px;
+}
+
+.locations-card {
+  background: linear-gradient(135deg, var(--primary) 0%, #061858 100%);
+  border-radius: var(--radius-lg);
+  padding: 52px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 48px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.locations-card::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(255, 177, 0, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.locations-text {
+  position: relative;
+  z-index: 1;
+}
+
+.locations-text .section-tag {
+  background: rgba(255, 177, 0, 0.1);
+  color: var(--secondary);
+  border-color: rgba(255, 177, 0, 0.25);
+}
+
+.locations-text h2 {
+  color: white;
+  margin-bottom: 16px;
+}
+
+.locations-text > p {
+  color: #9ab0e0;
+  margin-bottom: 28px;
+  max-width: 420px;
+}
+
+.locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.95rem;
+}
+
+.location-item svg {
+  color: var(--secondary);
+  flex: none;
+}
+
+.locations-visual {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 1;
+}
+
+.location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1060px) {
+  .about-hero-unique-inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+  .about-hero-unique-text h1 {
+    max-width: 100%;
+  }
+  .about-hero-unique-text > p {
+    max-width: 100%;
+    margin: 0 auto 40px;
+  }
+  .about-hero-unique-stats {
+    justify-content: center;
+  }
+
+  /* HERO IMAGES — MOBILE: stacked, centered, no absolute positioning */
+  .about-hero-unique-visual {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+  }
+
+  .hero-image-main,
+  .hero-image-float {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    transform: none;
+    margin: 0;
+  }
+
+  .hero-image-main {
+    order: 1;
+    aspect-ratio: 3/4;
+  }
+
+  .hero-image-float {
+    order: 2;
+    width: 70%;
+    max-width: 280px;
+    margin-top: -30px;
+    border: 4px solid white;
+    aspect-ratio: 5/6;
+  }
+
+  .hero-badge-float {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    order: 3;
+    margin-top: 8px;
+  }
+
+  .hero-img-primary,
+  .hero-img-secondary {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  /* STORY IMAGES — MOBILE: stacked, centered */
+  .story-layout {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .story-images-cluster {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+  }
+
+  .story-img-main,
+  .story-img-side,
+  .story-img-accent {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    transform: none;
+    margin: 0;
+  }
+
+  .story-img-main {
+    aspect-ratio: 4/5;
+    order: 1;
+  }
+
+  .story-img-side {
+    width: 75%;
+    max-width: 300px;
+    margin-top: -24px;
+    border: 4px solid white;
+    aspect-ratio: 3/4;
+    order: 2;
+  }
+
+  .story-img-accent {
+    width: 60%;
+    max-width: 240px;
+    margin-top: -20px;
+    border: 4px solid white;
+    aspect-ratio: 4/5;
+    order: 3;
+  }
+
+  .story-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .team-member-card {
+    flex: 0 0 260px;
+  }
+
+  .team-member-image {
+    height: 340px;
+  }
+}
+
+@media (max-width: 900px) {
+  .mission-grid {
+    grid-template-columns: 1fr;
+  }
+  .locations-card {
+    grid-template-columns: 1fr;
+    padding: 36px 28px;
+  }
+  .locations-visual {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .about-hero-unique {
+    padding-top: 90px;
+  }
+  .about-hero-unique-stats {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .stat-divider {
+    display: none;
+  }
+  .stat-block strong {
+    font-size: 2rem;
+  }
+
+  .hero-image-main {
+    max-width: 320px;
+  }
+
+  .hero-image-float {
+    max-width: 220px;
+  }
+
+  .hero-badge-float {
+    display: none;
+  }
+
+  .story-img-main {
+    max-width: 320px;
+  }
+
+  .story-img-side {
+    max-width: 240px;
+  }
+
+  .story-img-accent {
+    max-width: 200px;
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-member-card {
+    flex: 0 0 240px;
+  }
+
+  .team-member-image {
+    height: 300px;
+  }
+
+  .team-carousel-track {
+    animation: teamScroll 18s linear infinite;
+  }
+
+  .locations-card {
+    padding: 28px 20px;
+    border-radius: var(--radius);
+  }
+  .mission-card {
+    padding: 28px 24px;
+  }
 }
 
 /* ===== STORY SECTION — IMAGE CLUSTER ===== */

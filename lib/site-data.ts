@@ -24,21 +24,21 @@ export const navLinks = [
   { href: '/services', label: 'Services' },
   { href: '/products', label: 'Products' },
   { href: '/portfolio', label: 'Portfolio' },
+  { href: '/training', label: 'Training' },
   { href: '/ambassador', label: 'Ambassador' },
   { href: '/contact', label: 'Contact' },
 ];
 
-// All images from Unsplash source - works with regular <img> tags without next.config.js
 export const recommendedImages = {
   hero: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400&q=80',
   laptop: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80',
   repair: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80',
   solar: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&q=80',
-  accessories: '/images/gadget.png',  // LOCAL IMAGE
+  accessories: '/images/gadget.png',
   campus: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',
   shop: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
   phone: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80',
-  network: '/images/IT.png',  // LOCAL IMAGE
+  network: '/images/IT.png',
   workspace: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80',
   tools: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800&q=80',
   energy: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&q=80',
@@ -81,9 +81,9 @@ export const values = [
 ];
 
 export const testimonials = [
-  'Emmy Technology provided excellent guidance when I needed a laptop for my academic work. The service was professional from start to finish.',
-  'Their repair team fixed my laptop quickly and saved me the cost of buying a new one.',
-  'I appreciate their honesty, professionalism, and commitment to customer satisfaction.'
+  { quote: 'Emmy Technology provided excellent guidance when I needed a laptop for my academic work. The service was professional from start to finish.', name: 'Bamidele Blessing' },
+  { quote: 'Their repair team fixed my laptop quickly and saved me the cost of buying a new one.', name: 'Victoria Ade' },
+  { quote: 'I appreciate their honesty, professionalism, and commitment to customer satisfaction.', name: 'Ewatoni Zion' },
 ];
 
 export const ambassadorBenefits = [

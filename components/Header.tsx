@@ -1,9 +1,16 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, Phone, MessageCircle } from 'lucide-react';
 import { brand, navLinks } from '@/lib/site-data';
 
 export default function Header() {
+  const closeMobileMenu = () => {
+    const menu = document.querySelector('.mobile-menu') as HTMLDetailsElement;
+    if (menu) menu.open = false;
+  };
+
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label="Emmy Technology home">
@@ -30,10 +37,10 @@ export default function Header() {
         <summary aria-label="Open menu"><Menu size={24} /></summary>
         <div className="mobile-menu-panel">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>{link.label}</Link>
+            <Link key={link.href} href={link.href} onClick={closeMobileMenu}>
+              {link.label}
+            </Link>
           ))}
-          <a href={brand.whatsapp}>WhatsApp Emmy Technology</a>
-          <a href={`tel:${brand.phone}`}>Call {brand.phoneDisplay}</a>
         </div>
       </details>
     </header>

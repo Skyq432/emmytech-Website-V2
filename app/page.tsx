@@ -21,10 +21,22 @@ export default function Home() {
               Genuine Products • Expert Repairs • Solar Solutions
             </span>
             <h1>Technology you can trust. Solutions you can depend on.</h1>
-            <p>Emmy Technology helps students, professionals, homes and businesses in Ibadan buy the right devices, get expert repairs, and stay powered with reliable solar and IT support.</p>
+            <p>Emmy Technology helps students, professionals, and organizations in Nigeria buy the right devices, get expert repairs, and stay powered with reliable solar and IT support.</p>
             <div className="hero-actions">
               <Link className="btn primary-light" href="/products">Shop Products</Link>
               <a className="btn secondary" href={brand.whatsapp} target="_blank" rel="noopener noreferrer">Book a Repair</a>
+              <Link 
+                className="btn" 
+                href="/training"
+                style={{ 
+                  backgroundColor: '#22c55e', 
+                  color: 'white', 
+                  border: 'none',
+                  fontWeight: 600
+                }}
+              >
+                Book a Training
+              </Link>
             </div>
           </div>
           <div className="hero-crescendo-image">
@@ -143,7 +155,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== WHY CHOOSE US - WITH YOUR TEAM PHOTO ===== */}
+      {/* ===== WHY CHOOSE US ===== */}
       <section className="section-shell why-section">
         <div className="why-layout">
           <div className="why-image">
@@ -185,7 +197,7 @@ export default function Home() {
         </div>
       </section>
 
-          {/* ===== PORTFOLIO PREVIEW ===== */}
+      {/* ===== PORTFOLIO PREVIEW ===== */}
       <section className="section-shell dark-section full-bleed portfolio-preview">
         <div>
           <span className="section-tag gold">Portfolio</span>
@@ -205,16 +217,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== TESTIMONIALS ===== */}
+      {/* ===== TESTIMONIALS WITH NAMES ===== */}
       <section className="section-shell testimonials">
         <div className="section-heading">
           <span className="section-tag">Customer Voice</span>
           <h2>What our customers say</h2>
         </div>
         <div className="testimonial-grid">
-          {testimonials.map((quote, idx) => (
+          {testimonials.map((item, idx) => (
             <blockquote key={idx}>
-              <p>&ldquo;{quote}&rdquo;</p>
+              <p>&ldquo;{item.quote}&rdquo;</p>
+              <footer>— {item.name}</footer>
             </blockquote>
           ))}
         </div>
