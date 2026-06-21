@@ -83,10 +83,10 @@ export default function AboutPage() {
           <div className="about-hero-unique-text">
             <span className="section-tag">About Emmy Technology</span>
             <h1>Building a smarter future through reliable technology.</h1>
-            <p>Emmy Technology is a fast-growing technology solutions company based in Ibadan, Nigeria. We provide genuine gadgets, expert repairs, solar installations and IT support to students, professionals, homes and businesses across the city.</p>
+            <p>Emmy Technology is a fast-growing technology solutions company based in Ibadan, Nigeria. We supply genuine gadgets, expert repairs, solar installations and IT support to students, professionals, and organizations across Nigeria</p>
             <div className="about-hero-unique-stats">
               <div className="stat-block">
-                <strong>2019</strong>
+                <strong>2021</strong>
                 <span>Founded</span>
               </div>
               <div className="stat-divider" />
@@ -96,7 +96,7 @@ export default function AboutPage() {
               </div>
               <div className="stat-divider" />
               <div className="stat-block">
-                <strong>500+</strong>
+                <strong>800+</strong>
                 <span>Customers</span>
               </div>
             </div>
@@ -159,7 +159,7 @@ export default function AboutPage() {
           <div className="story-content">
             <span className="section-tag">Our Story</span>
             <h2>From a single desk to multiple thriving locations and beyond.</h2>
-            <p>Emmy Technology started with a simple belief: everyone deserves access to genuine technology, clear advice and dependable support. What began as a small operation helping students find reliable laptops has grown into a full-service technology company with presence at the University of Ibadan and Sango.</p>
+            <p>Emmy Technology started with a simple belief: everyone deserves access to genuine technology, clear advice and dependable support. What began as a small operation helping students find reliable laptops has grown into a full-service technology company.</p>
             <p>Today, we serve hundreds of customers across Ibadan — from undergraduates needing their first laptop to businesses requiring complete solar power setups. Every device we sell, every repair we complete and every installation we delivers carries the same promise: quality you can trust, service you can depend on.</p>
             <div className="story-highlights">
               <div className="story-highlight">
