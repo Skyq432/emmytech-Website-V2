@@ -59,7 +59,7 @@ export const productHighlights = [
   { name: 'Student Laptop Deals', category: 'Laptops', price: 'Request current price', note: 'Best for assignments, online classes, design basics and everyday productivity.', imageKey: 'laptop' },
   { name: 'Smartphone Selection', category: 'Mobile Devices', price: 'Request current price', note: 'Reliable phones with clear recommendations based on usage and budget.', imageKey: 'phone' },
   { name: 'Chargers, Power Banks & Accessories', category: 'Accessories', price: 'Available in-store', note: 'Everyday essentials for students, workers and business owners.', imageKey: 'accessories' },
-  { name: 'Solar & Inverter Products', category: 'Solar Products', price: 'Quote after assessment', note: 'Power support products for homes, shops, offices and hostels.', imageKey: 'solar' },
+  { name: 'Solar & Inverter Installation', category: 'Solar Products', price: 'Quote after assessment', note: 'Power support products for homes, shops, offices and hostels.', imageKey: 'solar' },
 ];
 
 export const portfolioItems = [

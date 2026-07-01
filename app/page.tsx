@@ -90,7 +90,7 @@ export default function Home() {
         </div>
 
         <div className="category-grid">
-          <Link href="/products/laptops" className="category-card">
+          <Link href="/products" className="category-card">
             <div className="category-icon"><Monitor size={24} /></div>
             <div className="category-content">
               <strong>Laptops</strong>
@@ -99,7 +99,7 @@ export default function Home() {
             <ArrowRight size={18} className="category-arrow" />
           </Link>
 
-          <Link href="/products/phones" className="category-card">
+          <Link href="/products" className="category-card">
             <div className="category-icon"><Smartphone size={24} /></div>
             <div className="category-content">
               <strong>Smartphones</strong>
@@ -108,7 +108,7 @@ export default function Home() {
             <ArrowRight size={18} className="category-arrow" />
           </Link>
 
-          <Link href="/products/accessories" className="category-card">
+          <Link href="/products" className="category-card">
             <div className="category-icon"><Headphones size={24} /></div>
             <div className="category-content">
               <strong>Accessories</strong>
@@ -117,7 +117,7 @@ export default function Home() {
             <ArrowRight size={18} className="category-arrow" />
           </Link>
 
-          <Link href="/products/solar" className="category-card">
+          <Link href="/products" className="category-card">
             <div className="category-icon"><Sun size={24} /></div>
             <div className="category-content">
               <strong>Solar & Power</strong>
