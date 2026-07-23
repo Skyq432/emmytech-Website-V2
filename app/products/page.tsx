@@ -2,7 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import "./products.css";
 import {
   ShoppingCart,
@@ -61,6 +62,11 @@ interface Product {
   created_at?: string;
 }
 
+interface GalleryCacheEntry {
+  images: string[];
+  description: string;
+}
+
 interface CartItem extends Product {
   quantity: number;
 }
@@ -94,7 +100,8 @@ const sortOptions = [
   { value: "rating", label: "Highest Rated" },
 ];
 
-const PLACEHOLDER_IMAGE = "/images/products/placeholder.jpg";
+const PLACEHOLDER_IMAGE = "";
+const PAGE_SIZE = 12;
 
 const formatPrice = (price: number) => {
   if (!price || price <= 0) return "Request Quote";
@@ -176,22 +183,7 @@ const mapProduct = (row: any): Product => {
     row.product_categories?.name ||
     titleCase(categorySlug);
 
-  const productImages: ProductImage[] = Array.isArray(row.product_images)
-    ? row.product_images
-    : [];
-
-  const sortedImages = [...productImages].sort((a, b) => {
-    if (a.is_primary && !b.is_primary) return -1;
-    if (!a.is_primary && b.is_primary) return 1;
-    return Number(a.sort_order || 0) - Number(b.sort_order || 0);
-  });
-
-  const gallery = [
-    row.image_url,
-    ...sortedImages.map((img) => img.image_url),
-  ]
-    .filter(Boolean)
-    .filter((value, index, array) => array.indexOf(value) === index) as string[];
+  const gallery = [row.image_url].filter(Boolean) as string[];
 
   const salePrice = Number(row.sale_price || row.price || 0);
   const originalPrice = Number(row.original_price || 0);
@@ -245,6 +237,45 @@ function LoadingSpinner() {
   );
 }
 
+function OptimizedProductImage({
+  src,
+  alt,
+  className,
+  sizes,
+  quality = 63,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+  sizes: string;
+  quality?: number;
+}) {
+  const [failed, setFailed] = useState(!src);
+
+  useEffect(() => setFailed(!src), [src]);
+
+  if (failed) {
+    return (
+      <div className={`${className} product-image-placeholder`} role="img" aria-label={`${alt} image unavailable`}>
+        <Package size={28} />
+        <span>Image unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      quality={quality}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-4">
@@ -293,13 +324,11 @@ function ProductCard({
     <div className="product-card-ecom">
       <div className="product-card-image-wrapper">
         <div className="product-card-image">
-          <img
+          <OptimizedProductImage
             src={product.image}
             alt={product.name}
             className="product-img"
-            onError={(e) => {
-              e.currentTarget.src = PLACEHOLDER_IMAGE;
-            }}
+            sizes="(max-width: 380px) 100vw, (max-width: 900px) 50vw, (max-width: 1060px) 33vw, 25vw"
           />
         </div>
 
@@ -367,11 +396,17 @@ function QuickViewModal({
   isOpen,
   onClose,
   onAddToCart,
+  gallery,
+  galleryLoading,
+  galleryError,
 }: {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (product: Product) => void;
+  gallery: string[];
+  galleryLoading: boolean;
+  galleryError: string | null;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
@@ -398,20 +433,23 @@ function QuickViewModal({
 
         <div className="modal-grid">
           <div className="modal-image">
-            <img
+            <OptimizedProductImage
               src={activeImage}
               alt={product.name}
               className="modal-img"
-              onError={(e) => {
-                e.currentTarget.src = PLACEHOLDER_IMAGE;
-              }}
+              sizes="(max-width: 1060px) 100vw, 450px"
+              quality={65}
             />
 
             {product.discount && product.discount > 0 && (
               <span className="modal-discount">-{product.discount}%</span>
             )}
 
-            {product.gallery.length > 1 && (
+            {galleryLoading && (
+              <div className="gallery-loading"><Loader2 size={18} className="animate-spin" /> Loading gallery...</div>
+            )}
+            {galleryError && <div className="gallery-error">{galleryError}</div>}
+            {!galleryLoading && gallery.length > 1 && (
               <div
                 style={{
                   position: "absolute",
@@ -424,7 +462,7 @@ function QuickViewModal({
                   zIndex: 4,
                 }}
               >
-                {product.gallery.map((image) => (
+                {gallery.map((image) => (
                   <button
                     key={image}
                     onClick={() => setActiveImage(image)}
@@ -441,15 +479,15 @@ function QuickViewModal({
                       background: "#fff",
                       cursor: "pointer",
                       flex: "0 0 auto",
+                      position: "relative",
                     }}
                   >
-                    <img
+                    <OptimizedProductImage
                       src={image}
                       alt={product.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={(e) => {
-                        e.currentTarget.src = PLACEHOLDER_IMAGE;
-                      }}
+                      className="modal-thumbnail-img"
+                      sizes="54px"
+                      quality={60}
                     />
                   </button>
                 ))}
@@ -585,13 +623,12 @@ function CartDrawer({
               {cart.map((item) => (
                 <div key={item.id} className="cart-item">
                   <div className="cart-item-image">
-                    <img
+                    <OptimizedProductImage
                       src={item.image}
                       alt={item.name}
                       className="cart-img"
-                      onError={(e) => {
-                        e.currentTarget.src = PLACEHOLDER_IMAGE;
-                      }}
+                      sizes="68px"
+                      quality={60}
                     />
                   </div>
 
@@ -648,10 +685,14 @@ export default function ProductsPage() {
     { id: "all", name: "All Products", icon: <Package size={16} /> },
   ]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
 
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState("featured");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
   const [showFilters, setShowFilters] = useState(false);
@@ -661,6 +702,12 @@ export default function ProductsPage() {
 
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showQuickView, setShowQuickView] = useState(false);
+  const [quickViewGallery, setQuickViewGallery] = useState<string[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+  const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
+  const galleryRequestSequence = useRef(0);
+  const requestSequence = useRef(0);
 
   const [controlBarVisible, setControlBarVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -689,6 +736,32 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from("product_categories")
+        .select("slug,name")
+        .order("name", { ascending: true });
+
+      if (!data) return;
+      setCategories([
+        { id: "all", name: "All Products", icon: <Package size={16} /> },
+        ...data.map((category) => ({
+          id: category.slug,
+          name: category.name,
+          icon: categoryConfig[category.slug]?.icon || <Package size={16} />,
+        })),
+      ]);
+    };
+
+    void fetchCategories();
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const referralCode =
       params.get("ref") ||
@@ -703,65 +776,66 @@ export default function ProductsPage() {
     registerVisitor(referralCode);
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (append = false) => {
+    const requestId = ++requestSequence.current;
+    const from = append ? products.length : 0;
+    const to = from + PAGE_SIZE - 1;
+
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError(null);
 
     try {
-      const { data, error: supaError } = await supabase
+      let query = supabase
         .from("products")
-        .select(`
-          *,
-          product_categories (
-            id,
-            name,
-            slug
-          ),
-          product_images (
-            id,
-            image_url,
-            image_path,
-            is_primary,
-            sort_order
-          )
-        `)
-        .eq("status", "active")
-        .order("featured", { ascending: false })
-        .order("created_at", { ascending: false });
+        .select(`id,name,price,sale_price,original_price,discount_percentage,image_url,category,category_id,stock,featured,product_tag,created_at,product_categories(name,slug)`, { count: "exact" })
+        .eq("status", "active");
+
+      if (activeCategory !== "all") query = query.eq("category", activeCategory);
+      if (debouncedSearch) {
+        const safeTerm = debouncedSearch.replace(/[,%().]/g, " ");
+        query = query.or(`name.ilike.%${safeTerm}%,product_tag.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%,category.ilike.%${safeTerm}%`);
+      }
+      if (priceRange[0] > 0) query = query.gte("price", priceRange[0]);
+      if (priceRange[1] < 10000000) query = query.lte("price", priceRange[1]);
+
+      if (sortBy === "price-low") query = query.order("price", { ascending: true });
+      else if (sortBy === "price-high") query = query.order("price", { ascending: false });
+      else if (sortBy === "newest") query = query.order("created_at", { ascending: false });
+      else query = query.order("featured", { ascending: false }).order("created_at", { ascending: false });
+
+      const { data, error: supaError, count } = await query.range(from, to);
 
       if (supaError) throw new Error(supaError.message);
+      if (requestId !== requestSequence.current) return;
 
       const mapped = (data || []).map(mapProduct);
-      setProducts(mapped);
-
-      const categoryMap = new Map<string, Category>();
-      categoryMap.set("all", { id: "all", name: "All Products", icon: <Package size={16} /> });
-
-      mapped.forEach((product) => {
-        if (!categoryMap.has(product.category)) {
-          categoryMap.set(product.category, {
-            id: product.category,
-            name:
-              categoryConfig[product.category]?.name ||
-              product.subcategory ||
-              titleCase(product.category),
-            icon: categoryConfig[product.category]?.icon || <Package size={16} />,
-          });
-        }
+      setProducts((current) => {
+        if (!append) return mapped;
+        const byId = new Map(current.map((product) => [product.id, product]));
+        mapped.forEach((product) => byId.set(product.id, product));
+        return Array.from(byId.values());
       });
-
-      setCategories(Array.from(categoryMap.values()));
+      const total = count || 0;
+      setTotalProducts(total);
+      setHasMore(from + mapped.length < total);
     } catch (err: any) {
+      if (requestId !== requestSequence.current) return;
       setError(err.message || "Failed to load products");
       console.error("Supabase fetch error:", err);
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
-  }, []);
+  }, [activeCategory, debouncedSearch, priceRange, products.length, sortBy]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    void fetchProducts(false);
+    // products.length changes after each page; it must not reset the active query.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, debouncedSearch, priceRange, sortBy]);
 
   const addToCart = useCallback((product: Product) => {
     if (product.stock === 0) return;
@@ -802,60 +876,60 @@ export default function ProductsPage() {
     setCart((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const openQuickView = useCallback((product: Product) => {
+  const openQuickView = useCallback(async (product: Product) => {
+    const galleryRequestId = ++galleryRequestSequence.current;
     setQuickViewProduct(product);
     setShowQuickView(true);
+    setQuickViewGallery([product.image].filter(Boolean));
+    setGalleryError(null);
     trackProductView(product.id);
+
+    const cached = galleryCache.current.get(product.id);
+    if (cached) {
+      setGalleryLoading(false);
+      setQuickViewGallery(cached.images);
+      setQuickViewProduct({ ...product, description: cached.description });
+      return;
+    }
+
+    setGalleryLoading(true);
+    const [detailsResult, imagesResult] = await Promise.all([
+      supabase.from("products").select("description").eq("id", product.id).single(),
+      supabase
+        .from("product_images")
+        .select("image_url,is_primary,sort_order")
+        .eq("product_id", product.id)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    if (galleryRequestId !== galleryRequestSequence.current) return;
+
+    if (imagesResult.error || detailsResult.error) {
+      setGalleryError("Some product details could not be loaded.");
+      setGalleryLoading(false);
+      return;
+    }
+
+    const images = [product.image, ...(imagesResult.data || []).map((image) => image.image_url)]
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index);
+    const entry = {
+      images,
+      description: detailsResult.data?.description || product.description,
+    };
+    galleryCache.current.set(product.id, entry);
+    setQuickViewGallery(entry.images);
+    setQuickViewProduct({ ...product, description: entry.description });
+    setGalleryLoading(false);
   }, []);
 
   const closeQuickView = useCallback(() => {
+    galleryRequestSequence.current += 1;
     setShowQuickView(false);
+    setGalleryLoading(false);
     setTimeout(() => setQuickViewProduct(null), 250);
   }, []);
-
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    if (activeCategory !== "all") {
-      result = result.filter((product) => product.category === activeCategory);
-    }
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (product) =>
-          product.name.toLowerCase().includes(q) ||
-          product.category.toLowerCase().includes(q) ||
-          product.subcategory.toLowerCase().includes(q) ||
-          product.tags.some((tag) => tag.toLowerCase().includes(q))
-      );
-    }
-
-    result = result.filter(
-      (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
-
-    switch (sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "newest":
-        result.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
-        break;
-      case "featured":
-      default:
-        result.sort((a, b) => Number(b.featured) - Number(a.featured));
-        break;
-    }
-
-    return result;
-  }, [products, activeCategory, searchQuery, sortBy, priceRange]);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -899,7 +973,7 @@ export default function ProductsPage() {
 
           <div className="products-hero-stats">
             <div className="hero-stat">
-              <strong>{products.length}+</strong>
+              <strong>{totalProducts}+</strong>
               <span>Products</span>
             </div>
             <div className="hero-stat">
@@ -944,7 +1018,7 @@ export default function ProductsPage() {
               </button>
             )}
 
-            <span className="result-count">{filteredProducts.length} items</span>
+            <span className="result-count">{totalProducts} items</span>
 
             <div className="sort-dropdown">
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
@@ -1026,18 +1100,27 @@ export default function ProductsPage() {
           {loading ? (
             <LoadingSpinner />
           ) : error ? (
-            <ErrorState message={error} onRetry={fetchProducts} />
-          ) : filteredProducts.length > 0 ? (
-            <div className="products-grid-ecom">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={addToCart}
-                  onQuickView={openQuickView}
-                />
-              ))}
-            </div>
+            <ErrorState message={error} onRetry={() => void fetchProducts(false)} />
+          ) : products.length > 0 ? (
+            <>
+              <div className="products-grid-ecom">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={addToCart}
+                    onQuickView={openQuickView}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="load-more-wrap">
+                  <button className="btn primary load-more-button" onClick={() => void fetchProducts(true)} disabled={loadingMore}>
+                    {loadingMore ? <><Loader2 size={17} className="animate-spin" /> Loading...</> : "Load More"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="no-results">
               <Search size={44} className="no-results-icon" />
@@ -1098,6 +1181,9 @@ export default function ProductsPage() {
         isOpen={showQuickView}
         onClose={closeQuickView}
         onAddToCart={addToCart}
+        gallery={quickViewGallery}
+        galleryLoading={galleryLoading}
+        galleryError={galleryError}
       />
 
       <CartDrawer
