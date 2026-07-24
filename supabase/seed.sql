@@ -61,6 +61,29 @@ insert into public.spin_players (
   ('40000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000002','+2340000000102','Demo Bayo Referral','demo.bayo@example.com','DEMOBAYO2','30000000-0000-4000-8000-000000000001',5,0,0,0,1000,0,0)
 on conflict (id) do update set identity_id=excluded.identity_id, spins_remaining=excluded.spins_remaining, wallet_balance=excluded.wallet_balance;
 
+-- Active local 24-hour cash challenge. The countdown has about 22 hours left
+-- after each reset, so both the product page and standalone wheel can be tested.
+insert into public.spin_cash_challenges (
+  id, identity_id, spin_player_id, cycle_number, status, started_at, expires_at,
+  cash_balance, cash_cap, cash_target, conversion_floor, converted_cash_off_amount,
+  last_credit_at
+) values (
+  '47000000-0000-4000-8000-000000000001',
+  '30000000-0000-4000-8000-000000000001',
+  '40000000-0000-4000-8000-000000000001',
+  1, 'active', now() - interval '2 hours', now() + interval '22 hours',
+  750, 3000, 1000, 700, 0, now() - interval '30 minutes'
+)
+on conflict (id) do update set
+  status = excluded.status,
+  started_at = excluded.started_at,
+  expires_at = excluded.expires_at,
+  cash_balance = excluded.cash_balance,
+  converted_cash_off_amount = 0,
+  processed_at = null,
+  last_credit_at = excluded.last_credit_at,
+  updated_at = now();
+
 insert into public.spin_prizes (id, old_prize_id, label, prize_type, gravity, stock, monetary_value, is_active, on_wheel) values
   ('41000000-0000-4000-8000-000000000001',900001,'Demo ₦100 Cash Off','cash',10,100,100,true,true),
   ('41000000-0000-4000-8000-000000000002',900002,'Test Bonus Spin','bonus_spin',5,100,0,true,true),

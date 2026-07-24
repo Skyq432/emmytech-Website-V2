@@ -128,9 +128,29 @@ const PAGE_SIZE = 12;
 const CASH_OFF_SELECTION_KEY = "emmy_cash_off_product";
 const WHEEL_SESSION_KEY = "emmy_wheel_session";
 
+interface CashChallengeState {
+  id?: string;
+  status?: "not_started" | "active" | "converted_to_cash_off" | "cash_eligible" | "closed";
+  started_at?: string;
+  expires_at?: string;
+  cash_balance?: number;
+  cash_target?: number;
+  cash_cap?: number;
+  conversion_floor?: number;
+  seconds_remaining?: number;
+  progress_percent?: number;
+  amount_to_cash_target?: number;
+  converted_cash_off_amount?: number;
+  active?: boolean;
+  cash_eligible?: boolean;
+  converted_to_cash_off?: boolean;
+}
+
 interface WheelState {
+  server_now?: string;
   cash_off_balance: number;
-  spin_player?: { spins_remaining?: number; wallet_balance?: number; last_prize_won?: string; cashout_target?: number; spin_sequence_step?: number };
+  cash_challenge?: CashChallengeState;
+  spin_player?: { spins_remaining?: number; wallet_balance?: number; last_prize_won?: string; cashout_target?: number; spin_sequence_step?: number; cashout_eligible?: boolean };
   active_prizes?: Array<{ id?: string; label?: string; monetary_value?: number }>;
   awarded_prizes?: Array<{ id?: string; prize_label?: string; result_label?: string; status?: string; created_at?: string }>;
 }
@@ -138,6 +158,13 @@ interface WheelState {
 interface WheelSpinResult {
   label?: string;
   result_type?: string;
+  cash_amount?: number;
+  cash_challenge_credit?: number;
+  cash_challenge_before?: number;
+  cash_challenge_after?: number;
+  cash_challenge_expires_at?: string;
+  cash_challenge_started?: boolean;
+  cash_challenge_capped_amount?: number;
   cash_off_amount?: number;
   cash_off_after?: number;
   spin_log_id?: string;
@@ -150,6 +177,19 @@ const formatRewardMoney = (value: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(Number.isFinite(value) ? value : 0);
+
+const challengeSecondsLeft = (challenge: CashChallengeState | undefined, now: number) => {
+  if (!challenge?.active || !challenge.expires_at) return 0;
+  return Math.max(0, Math.floor((new Date(challenge.expires_at).getTime() - now) / 1000));
+};
+
+const formatChallengeTime = (seconds: number) => {
+  const safe = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  return [hours, minutes, secs].map((part) => String(part).padStart(2, "0")).join(":");
+};
 
 const cleanPrizeLabel = (label?: string) =>
   (label || "Reward").replace(/^(demo|test)\s+/i, "").trim();
@@ -887,6 +927,8 @@ export default function ProductsPage() {
   const [selectedCashOffProductId, setSelectedCashOffProductId] = useState<string | null>(null);
   const [fullWheelBusy, setFullWheelBusy] = useState(false);
   const [fullWheelError, setFullWheelError] = useState<string | null>(null);
+  const [challengeClock, setChallengeClock] = useState(() => Date.now());
+  const challengeExpiryRefreshRef = useRef<string | null>(null);
   const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
   const galleryRequestSequence = useRef(0);
   const requestSequence = useRef(0);
@@ -941,6 +983,25 @@ export default function ProductsPage() {
     window.addEventListener("focus", onVisible);
     return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
   }, [ensureWheelState, refreshWheelState]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setChallengeClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const challenge = wheelState?.cash_challenge;
+    if (!challenge?.active || !challenge.expires_at) {
+      challengeExpiryRefreshRef.current = null;
+      return;
+    }
+    const seconds = challengeSecondsLeft(challenge, challengeClock);
+    if (seconds > 0 || challengeExpiryRefreshRef.current === challenge.id) return;
+    challengeExpiryRefreshRef.current = challenge.id || challenge.expires_at;
+    void refreshWheelState().catch((error) =>
+      console.warn("Challenge expiry refresh failed.", error),
+    );
+  }, [challengeClock, refreshWheelState, wheelState?.cash_challenge]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1290,6 +1351,20 @@ export default function ProductsPage() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const launcherSpins = Number(wheelState?.spin_player?.spins_remaining || 0);
   const launcherCashOff = Number(wheelState?.cash_off_balance || 0);
+  const launcherChallenge = wheelState?.cash_challenge;
+  const launcherChallengeSeconds = challengeSecondsLeft(launcherChallenge, challengeClock);
+  const launcherChallengeCash = Number(launcherChallenge?.cash_balance || 0);
+  const launcherRewardCopy = launcherChallenge?.active
+    ? `${formatChallengeTime(launcherChallengeSeconds)} · ${formatRewardMoney(launcherChallengeCash)} cash`
+    : launcherChallenge?.cash_eligible
+      ? `${formatRewardMoney(launcherChallengeCash)} cash ready`
+      : launcherChallenge?.converted_to_cash_off
+        ? `${formatRewardMoney(Number(launcherChallenge.converted_cash_off_amount || 0))} converted`
+        : launcherCashOff > 0
+          ? `${formatRewardMoney(launcherCashOff)} Cash-Off`
+          : launcherSpins > 0
+            ? `${launcherSpins} spin${launcherSpins === 1 ? "" : "s"} ready`
+            : "Tap to play";
 
   return (
     <main className="products-page">
@@ -1453,7 +1528,7 @@ export default function ProductsPage() {
           <span className="wheel-fab-icon" aria-hidden="true"><i /></span>
           <span className="wheel-fab-copy">
             <strong>Spin &amp; Save</strong>
-            <small>{launcherCashOff > 0 ? `${formatRewardMoney(launcherCashOff)} available` : launcherSpins > 0 ? `${launcherSpins} spin${launcherSpins === 1 ? "" : "s"} ready` : "Tap to play"}</small>
+            <small>{launcherRewardCopy}</small>
           </span>
         </button>
         <button className="cart-fab" onClick={() => setIsCartOpen(true)} aria-label={`Open cart with ${cartItemCount} items`}>
