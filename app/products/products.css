@@ -1560,3 +1560,39 @@
 .products-page .gallery-error {
   color: #b91c1c;
 }
+.card-spin-btn,
+.modal-spin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid #f59e0b;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
+}
+
+.card-spin-btn {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.8rem;
+}
+
+.card-spin-btn:disabled,
+.modal-spin:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.spin-handoff-error {
+  margin: 0 auto 1rem;
+  max-width: 48rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.8rem;
+  background: #fff1f2;
+  color: #9f1239;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  text-align: center;
+}

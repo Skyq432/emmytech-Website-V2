@@ -36,6 +36,7 @@ import {
   trackingSupabase as supabase,
   registerVisitor,
   trackAddToCart,
+  openSpinWheelFromProduct,
   trackPageViewed,
   trackProductQuickView,
   trackProductShared,
@@ -326,11 +327,15 @@ function ProductCard({
   onAddToCart,
   onProductView,
   onQuickView,
+  onSpin,
+  spinning,
 }: {
   product: Product;
   onAddToCart: (product: Product) => void;
   onProductView: (product: Product) => void;
   onQuickView: (product: Product) => void;
+  onSpin: (product: Product) => void;
+  spinning: boolean;
 }) {
   const [isLiked, setIsLiked] = useState(false);
 
@@ -361,6 +366,10 @@ function ProductCard({
           aria-label="Add to wishlist"
         >
           <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+        </button>
+        <button className="card-spin-btn" onClick={() => onSpin(product)} disabled={spinning}>
+          {spinning ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
+          <span>{spinning ? "Connecting…" : "Spin & Save"}</span>
         </button>
 
         <div className="product-card-actions" onClick={(event) => event.stopPropagation()}>
@@ -418,6 +427,8 @@ function QuickViewModal({
   galleryError,
   onShare,
   onWhatsApp,
+  onSpin,
+  spinning,
 }: {
   product: Product | null;
   isOpen: boolean;
@@ -428,6 +439,8 @@ function QuickViewModal({
   galleryError: string | null;
   onShare: (product: Product) => void;
   onWhatsApp: (product: Product) => void;
+  onSpin: (product: Product) => void;
+  spinning: boolean;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
@@ -598,6 +611,10 @@ function QuickViewModal({
                 <Share2 size={16} />
                 Share Product
               </button>
+              <button className="btn modal-spin" onClick={() => onSpin(product)} disabled={spinning}>
+                {spinning ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                {spinning ? "Connecting to wheel…" : "Spin & Save"}
+              </button>
             </div>
           </div>
         </div>
@@ -733,6 +750,8 @@ export default function ProductsPage() {
   const [quickViewGallery, setQuickViewGallery] = useState<string[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [spinProductId, setSpinProductId] = useState<string | null>(null);
+  const [spinError, setSpinError] = useState<string | null>(null);
   const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
   const galleryRequestSequence = useRef(0);
   const requestSequence = useRef(0);
@@ -990,6 +1009,25 @@ export default function ProductsPage() {
     items.forEach((item) => void trackWhatsAppPurchaseClicked(item.id, item.quantity));
   }, []);
 
+  const openSpinWheel = useCallback(async (product: Product) => {
+    setSpinProductId(product.id);
+    setSpinError(null);
+    try {
+      await openSpinWheelFromProduct(product.id);
+    } catch (error) {
+      console.warn('Spin & Save handoff failed.', error);
+      setSpinError(
+        error instanceof Error ? error.message : 'The secure wheel connection is unavailable right now.',
+      );
+      const fallback = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
+      if (fallback && window.confirm('Your account could not be connected. Open the wheel without account handoff?')) {
+        window.location.assign(fallback);
+      }
+    } finally {
+      setSpinProductId(null);
+    }
+  }, []);
+
   const closeQuickView = useCallback(() => {
     galleryRequestSequence.current += 1;
     setShowQuickView(false);
@@ -1163,6 +1201,7 @@ export default function ProductsPage() {
 
       <section className="products-grid-section">
         <div className="section-shell">
+          {spinError && <div className="spin-handoff-error" role="alert">{spinError}</div>}
           {loading ? (
             <LoadingSpinner />
           ) : error ? (
@@ -1177,6 +1216,8 @@ export default function ProductsPage() {
                     onAddToCart={addToCart}
                     onProductView={openProductView}
                     onQuickView={openQuickView}
+                    onSpin={(selected) => void openSpinWheel(selected)}
+                    spinning={spinProductId === product.id}
                   />
                 ))}
               </div>
@@ -1253,6 +1294,8 @@ export default function ProductsPage() {
         galleryError={galleryError}
         onShare={shareProduct}
         onWhatsApp={(product) => void trackWhatsAppPurchaseClicked(product.id, 1)}
+        onSpin={(product) => void openSpinWheel(product)}
+        spinning={spinProductId === quickViewProduct?.id}
       />
 
       <CartDrawer

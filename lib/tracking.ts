@@ -107,6 +107,35 @@ export const trackWhatsAppPurchaseClicked = (productId: string, quantity = 1) =>
 // Prepared for future UI integrations. These do not emit until explicitly called.
 export const trackSpinOpenedFromProduct = (productId: string) =>
   trackWebsiteEvent('spin_opened_from_product', { productId });
+
+export async function openSpinWheelFromProduct(productId: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const wheelUrl = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
+  if (!wheelUrl) throw new Error('The Spin & Save wheel is not configured.');
+
+  const visitorId = await registerVisitor();
+  if (!visitorId) throw new Error('We could not prepare your wheel session.');
+
+  await trackSpinOpenedFromProduct(productId);
+
+  const { data: handoffToken, error } = await trackingSupabase.rpc(
+    'create_website_wheel_handoff',
+    {
+      p_visitor_id: visitorId,
+      p_product_id: productId,
+      p_source_path: window.location.pathname,
+    },
+  );
+
+  if (error || !handoffToken) {
+    throw new Error('We could not securely connect your account to the wheel.');
+  }
+
+  const destination = new URL(wheelUrl);
+  destination.searchParams.set('handoff', handoffToken);
+  window.location.assign(destination.toString());
+}
 export const trackRewardViewed = () => trackWebsiteEvent('reward_viewed');
 export const trackRewardApplied = () => trackWebsiteEvent('reward_applied');
 
