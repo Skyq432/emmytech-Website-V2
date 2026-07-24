@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Sparkles,
+  WalletCards,
   TrendingUp,
   X,
   Zap,
@@ -88,6 +89,9 @@ interface SpinSaveOverlayProps {
   onSpin: () => void;
   onOpenFull: () => void;
   onViewCart: () => void;
+  profileRequired: boolean;
+  profileBusy: boolean;
+  onRegisterProfile: (profile: { fullName: string; phone: string; email: string }) => Promise<void>;
 }
 
 const SEGMENT_COLORS = ["#003399", "#fbb03b", "#ffffff"];
@@ -305,10 +309,14 @@ export default function SpinSaveOverlay({
   onSpin,
   onOpenFull,
   onViewCart,
+  profileRequired,
+  profileBusy,
+  onRegisterProfile,
 }: SpinSaveOverlayProps) {
   const [prizeBagOpen, setPrizeBagOpen] = useState(false);
   const [cashOffOpen, setCashOffOpen] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
+  const [profile, setProfile] = useState({ fullName: "", phone: "", email: "" });
 
   useEffect(() => {
     if (!open) return;
@@ -406,7 +414,21 @@ export default function SpinSaveOverlay({
           <X size={18} />
         </button>
 
-        <div className="cashoff-reference-content">
+        {profileRequired ? (
+          <div className="cashoff-profile-onboarding">
+            <span className="cashoff-profile-icon" aria-hidden="true">💳</span>
+            <small>ONE CASH-OFF ACCOUNT</small>
+            <h2>Connect your rewards</h2>
+            <p>Use the same phone number or email from the wheel to load your existing balance.</p>
+            <form onSubmit={(event) => { event.preventDefault(); void onRegisterProfile(profile); }}>
+              <label>Full name<input required value={profile.fullName} onChange={(event) => setProfile({ ...profile, fullName: event.target.value })} autoComplete="name" /></label>
+              <label>Phone number<input required value={profile.phone} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} autoComplete="tel" inputMode="tel" /></label>
+              <label>Email address<input required type="email" value={profile.email} onChange={(event) => setProfile({ ...profile, email: event.target.value })} autoComplete="email" /></label>
+              {error ? <p className="cashoff-reference-error" role="alert">{error}</p> : null}
+              <button type="submit" disabled={profileBusy}>{profileBusy ? <Loader2 size={17} className="animate-spin" /> : <WalletCards size={17} />} Connect Cash-Off</button>
+            </form>
+          </div>
+        ) : <div className="cashoff-reference-content">
           <span className="cashoff-reference-kicker">
             <Gift size={13} /> Tap the wheel. Win Cash-Off.
           </span>
@@ -505,7 +527,7 @@ export default function SpinSaveOverlay({
             </button>
           </nav>
 
-        </div>
+        </div>}
 
         {cashOffOpen ? (
           <div className="cashoff-panel-overlay" onMouseDown={() => setCashOffOpen(false)}>

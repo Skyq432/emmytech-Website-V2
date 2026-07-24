@@ -32,6 +32,81 @@
   box-shadow: 0 5px 16px rgba(15, 31, 62, .08);
 }
 
+.products-page .cashoff-profile-onboarding {
+  width: min(100% - 40px, 430px);
+  margin: auto;
+  padding: 46px 0 30px;
+  text-align: center;
+}
+
+.products-page .cashoff-profile-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 8px 24px rgba(21, 55, 112, .1);
+  font-size: 1.25rem;
+}
+
+.products-page .cashoff-profile-onboarding > small {
+  color: #0b56b6;
+  font-size: .5rem;
+  font-weight: 900;
+  letter-spacing: .09em;
+}
+
+.products-page .cashoff-profile-onboarding h2 {
+  margin: 7px 0 5px;
+  color: #071d49;
+  font-size: 1.65rem;
+  letter-spacing: -.04em;
+}
+
+.products-page .cashoff-profile-onboarding > p {
+  max-width: 330px;
+  margin: 0 auto 18px;
+  color: #75839a;
+  font-size: .68rem;
+  line-height: 1.5;
+}
+
+.products-page .cashoff-profile-onboarding form { display: grid; gap: 10px; text-align: left; }
+.products-page .cashoff-profile-onboarding label { color: #536176; font-size: .58rem; font-weight: 800; }
+.products-page .cashoff-profile-onboarding input {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 5px;
+  padding: 0 13px;
+  border: 1px solid rgba(202, 214, 232, .9);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  color: #071d49;
+  font: inherit;
+  font-size: .72rem;
+  outline: none;
+}
+.products-page .cashoff-profile-onboarding input:focus { border-color: #1762cf; box-shadow: 0 0 0 3px rgba(23, 98, 207, .1); }
+.products-page .cashoff-profile-onboarding form > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #063a9d, #1c5dcc);
+  color: #fff;
+  font: inherit;
+  font-size: .7rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .products-page .cashoff-reference-content {
   width: min(100% - 48px, 480px);
   padding: 38px 0 22px;
@@ -124,6 +199,11 @@
   .products-page .cashoff-reference-content {
     width: calc(100% - 28px);
     padding: 27px 0 16px;
+  }
+
+  .products-page .cashoff-profile-onboarding {
+    width: calc(100% - 32px);
+    padding: 42px 0 22px;
   }
 
   .products-page .cashoff-reference-kicker { min-height: 22px; font-size: .42rem; }

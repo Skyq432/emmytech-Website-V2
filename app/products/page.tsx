@@ -127,6 +127,7 @@ const PLACEHOLDER_IMAGE = "";
 const PAGE_SIZE = 12;
 const CASH_OFF_SELECTION_KEY = "emmy_cash_off_product";
 const WHEEL_SESSION_KEY = "emmy_wheel_session";
+const REWARD_PROFILE_KEY = "emmy_reward_profile_connected";
 
 interface CashChallengeState {
   id?: string;
@@ -927,6 +928,8 @@ export default function ProductsPage() {
   const [selectedCashOffProductId, setSelectedCashOffProductId] = useState<string | null>(null);
   const [fullWheelBusy, setFullWheelBusy] = useState(false);
   const [fullWheelError, setFullWheelError] = useState<string | null>(null);
+  const [rewardProfileReady, setRewardProfileReady] = useState(false);
+  const [rewardProfileBusy, setRewardProfileBusy] = useState(false);
   const [challengeClock, setChallengeClock] = useState(() => Date.now());
   const challengeExpiryRefreshRef = useRef<string | null>(null);
   const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
@@ -970,6 +973,7 @@ export default function ProductsPage() {
   }, [refreshWheelState]);
 
   useEffect(() => {
+    setRewardProfileReady(window.localStorage.getItem(REWARD_PROFILE_KEY) === "1");
     const stored = window.localStorage.getItem(CASH_OFF_SELECTION_KEY);
     if (stored) setSelectedCashOffProductId(stored);
     void ensureWheelState().catch((error) => console.warn("Wheel preload failed.", error));
@@ -983,6 +987,31 @@ export default function ProductsPage() {
     window.addEventListener("focus", onVisible);
     return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
   }, [ensureWheelState, refreshWheelState]);
+
+  const registerRewardProfile = useCallback(async (profile: { fullName: string; phone: string; email: string }) => {
+    setRewardProfileBusy(true);
+    setSpinError(null);
+    try {
+      const visitorId = getVisitorId();
+      if (!visitorId) throw new Error("We could not identify this browser. Please refresh and retry.");
+      const { data, error } = await supabase.rpc("bootstrap_canonical_wheel_visitor", {
+        p_visitor_id: visitorId,
+        p_full_name: profile.fullName,
+        p_phone: profile.phone,
+        p_email: profile.email,
+        p_referral_code: null,
+      });
+      if (error || !data?.wheel_session_token) throw error || new Error("Your Cash-Off account could not be connected.");
+      window.localStorage.setItem(WHEEL_SESSION_KEY, data.wheel_session_token);
+      window.localStorage.setItem(REWARD_PROFILE_KEY, "1");
+      setWheelState(data.state as WheelState);
+      setRewardProfileReady(true);
+    } catch (error) {
+      setSpinError(error instanceof Error ? error.message : "Your Cash-Off account could not be connected.");
+    } finally {
+      setRewardProfileBusy(false);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setChallengeClock(Date.now()), 1000);
@@ -1659,6 +1688,9 @@ export default function ProductsPage() {
         onSpin={() => void spinNativeWheel()}
         onOpenFull={() => void openFullWheel("overlay")}
         onViewCart={viewCartFromWheel}
+        profileRequired={!rewardProfileReady}
+        profileBusy={rewardProfileBusy}
+        onRegisterProfile={registerRewardProfile}
       />
     </main>
   );
