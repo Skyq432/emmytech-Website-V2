@@ -18,6 +18,31 @@ alter table public.website_wheel_handoffs enable row level security;
 revoke all on table public.website_wheel_handoffs from public, anon, authenticated;
 grant all on table public.website_wheel_handoffs to service_role;
 
+-- Historical imports can contain more than one player row for an identity.
+-- Preserve every player and its related history, but retain a single canonical
+-- identity link. Prefer the row with the most activity and latest update.
+with ranked_players as (
+  select
+    id,
+    row_number() over (
+      partition by identity_id
+      order by
+        coalesce(spins_remaining, 0) desc,
+        coalesce(wallet_balance, 0) desc,
+        coalesce(total_cash_won, 0) desc,
+        coalesce(updated_at, created_at) desc nulls last,
+        id
+    ) as identity_rank
+  from public.spin_players
+  where identity_id is not null
+)
+update public.spin_players as player
+set identity_id = null,
+    updated_at = now()
+from ranked_players
+where player.id = ranked_players.id
+  and ranked_players.identity_rank > 1;
+
 create unique index spin_players_one_per_identity_idx
   on public.spin_players (identity_id)
   where identity_id is not null;
