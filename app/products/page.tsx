@@ -56,6 +56,17 @@ import {
   trackReturnedFromFullWheel,
 } from "@/lib/tracking";
 
+async function callWheelApi<T>(operation: "bootstrap" | "state" | "spin", params: Record<string, unknown>) {
+  const response = await fetch("/api/wheel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operation, params }),
+  });
+  const payload = await response.json();
+  if (!response.ok || !payload.ok) throw new Error(payload.error || "The wheel service is unavailable.");
+  return payload.data as T;
+}
+
 interface ProductImage {
   id?: string;
   image_url: string;
@@ -944,14 +955,14 @@ export default function ProductsPage() {
   const refreshWheelState = useCallback(async () => {
     const token = window.localStorage.getItem(WHEEL_SESSION_KEY);
     if (!token) return null;
-    const { data, error } = await supabase.rpc("get_canonical_wheel_state", { p_session_token: token });
-    if (error) {
+    try {
+      const data = await callWheelApi<WheelState>("state", { p_session_token: token });
+      setWheelState(data);
+      return data;
+    } catch (error) {
       window.localStorage.removeItem(WHEEL_SESSION_KEY);
       throw error;
     }
-    const next = data as WheelState;
-    setWheelState(next);
-    return next;
   }, []);
 
   const ensureWheelState = useCallback(async () => {
@@ -963,10 +974,10 @@ export default function ProductsPage() {
     }
     const visitorId = getVisitorId();
     if (!visitorId) throw new Error("We could not prepare your reward session.");
-    const { data, error } = await supabase.rpc("bootstrap_canonical_wheel_visitor", {
+    const data = await callWheelApi<{ wheel_session_token: string; state: WheelState }>("bootstrap", {
       p_visitor_id: visitorId, p_full_name: null, p_phone: null, p_email: null, p_referral_code: null,
     });
-    if (error || !data?.wheel_session_token) throw error || new Error("Reward session unavailable.");
+    if (!data?.wheel_session_token) throw new Error("Reward session unavailable.");
     window.localStorage.setItem(WHEEL_SESSION_KEY, data.wheel_session_token);
     setWheelState(data.state as WheelState);
     return data.state as WheelState;
@@ -994,14 +1005,14 @@ export default function ProductsPage() {
     try {
       const visitorId = getVisitorId();
       if (!visitorId) throw new Error("We could not identify this browser. Please refresh and retry.");
-      const { data, error } = await supabase.rpc("bootstrap_canonical_wheel_visitor", {
+      const data = await callWheelApi<{ wheel_session_token: string; state: WheelState }>("bootstrap", {
         p_visitor_id: visitorId,
         p_full_name: profile.fullName,
         p_phone: profile.phone,
         p_email: profile.email,
         p_referral_code: null,
       });
-      if (error || !data?.wheel_session_token) throw error || new Error("Your Cash-Off account could not be connected.");
+      if (!data?.wheel_session_token) throw new Error("Your Cash-Off account could not be connected.");
       window.localStorage.setItem(WHEEL_SESSION_KEY, data.wheel_session_token);
       window.localStorage.setItem(REWARD_PROFILE_KEY, "1");
       setWheelState(data.state as WheelState);
@@ -1310,10 +1321,9 @@ export default function ProductsPage() {
     setWheelSpinning(true);
     setSpinError(null);
     try {
-      const { data, error } = await supabase.rpc("complete_canonical_wheel_spin", {
+      const data = await callWheelApi<{ result?: WheelSpinResult; state?: WheelState } & WheelState>("spin", {
         p_session_token: token, p_request_id: window.crypto.randomUUID(),
       });
-      if (error) throw error;
       const nextResult = (data?.result || null) as WheelSpinResult | null;
       setWheelSpinTarget(nextResult);
       await new Promise((resolve) => window.setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 350 : 6000));
