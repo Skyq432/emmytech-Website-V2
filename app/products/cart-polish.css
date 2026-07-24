@@ -1,0 +1,81 @@
+.products-page .cart-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 18px 24px;
+}
+
+.products-page .cart-item-details h4 { font-size: .78rem; }
+.products-page .cart-item-price { font-size: .76rem; font-weight: 750; }
+
+.products-page .cart-footer {
+  flex: 0 0 auto;
+  gap: 9px;
+  padding: 14px 24px;
+}
+
+.products-page .cart-order-summary { gap: 7px; }
+.products-page .cart-subtotal { font-size: .72rem; font-weight: 650; }
+.products-page .cart-subtotal > span:last-child { font-size: .78rem; }
+.products-page .cart-cashoff-line { font-size: .66rem; }
+.products-page .cart-estimated-total { padding-top: 8px; font-size: .72rem; }
+.products-page .cart-estimated-total strong { font-size: .88rem; }
+.products-page .cart-order-summary > small { font-size: .56rem; line-height: 1.35; }
+.products-page .cart-wheel-summary { padding: 8px 0; }
+.products-page .cart-checkout { height: 46px; font-size: .78rem; }
+.products-page .cart-continue { height: 32px; font-size: .75rem; }
+
+.products-page .wheel-fab-icon,
+.products-page .wheel-fab span.wheel-fab-icon {
+  position: relative;
+  overflow: visible;
+  border: 3px solid #fff;
+  background: conic-gradient(
+    #fbb03b 0 16.66%,
+    #0a48b3 16.66% 33.33%,
+    #fff 33.33% 50%,
+    #fbb03b 50% 66.66%,
+    #0a48b3 66.66% 83.33%,
+    #fff 83.33% 100%
+  );
+  box-shadow: inset 0 0 0 2px #0a3c9b;
+  animation: cart-mini-wheel-spin 4.5s linear infinite;
+}
+
+.products-page .wheel-fab-icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #0a3c9b;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.products-page .wheel-fab-icon i {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+  border-top: 8px solid #ef4444;
+}
+
+@keyframes cart-mini-wheel-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .products-page .cart-items { padding: 16px 20px; }
+  .products-page .cart-footer { padding: 12px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .products-page .wheel-fab-icon,
+  .products-page .wheel-fab span.wheel-fab-icon { animation: none; }
+}

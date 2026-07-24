@@ -1,70 +1,177 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const trackingSupabase = createClient(supabaseUrl, supabaseAnonKey);
+export const trackingSupabase = createClient(supabaseUrl, supabasePublishableKey);
 
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+const VISITOR_ID_KEY = 'emmy_visitor_id';
+let registration: { key: string; promise: Promise<string | null> } | null = null;
 
-export function getVisitorId() {
+export type WebsiteEventType =
+  | 'website_visited'
+  | 'page_viewed'
+  | 'product_viewed'
+  | 'product_quick_viewed'
+  | 'product_shared'
+  | 'add_to_cart'
+  | 'remove_from_cart'
+  | 'whatsapp_purchase_clicked'
+  | 'spin_opened_from_product'
+  | 'cash_off_product_selected'
+  | 'cash_off_product_changed'
+  | 'cash_off_product_removed'
+  | 'full_wheel_opened_from_overlay'
+  | 'full_wheel_opened_from_cart'
+  | 'returned_from_full_wheel'
+  | 'reward_viewed'
+  | 'reward_applied';
+
+export function getVisitorId(): string | null {
   if (typeof window === 'undefined') return null;
 
-  let visitorId = localStorage.getItem('emmy_visitor_id');
+  try {
+    const existing = window.localStorage.getItem(VISITOR_ID_KEY);
+    if (existing) return existing;
 
-  if (!visitorId) {
-    visitorId = generateUUID();
-    localStorage.setItem('emmy_visitor_id', visitorId);
+    const visitorId = window.crypto.randomUUID();
+    window.localStorage.setItem(VISITOR_ID_KEY, visitorId);
+    return visitorId;
+  } catch (error) {
+    console.warn('Visitor ID storage is unavailable; tracking was skipped.', error);
+    return null;
+  }
+}
+
+export function registerVisitor(referralCode?: string | null): Promise<string | null> {
+  const visitorId = getVisitorId();
+  if (!visitorId || typeof window === 'undefined') return Promise.resolve(null);
+
+  const key = visitorId;
+  if (registration?.key === key) return registration.promise;
+
+  const promise = (async () => {
+    try {
+      const { error } = await trackingSupabase.rpc('register_visitor_session', {
+        p_visitor_id: visitorId,
+        p_referral_code: referralCode || null,
+        p_ip_address: null,
+        p_user_agent: window.navigator.userAgent,
+      });
+      if (error) throw error;
+      return visitorId;
+    } catch (error) {
+      console.warn('Visitor registration failed; the website will continue normally.', error);
+      return null;
+    }
+  })();
+
+  registration = { key, promise };
+  return promise;
+}
+
+export async function trackWebsiteEvent(
+  eventType: WebsiteEventType,
+  options: { productId?: string | null; quantity?: number; sourcePage?: string } = {},
+): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const visitorId = await registerVisitor();
+    if (!visitorId) return;
+
+    const { error } = await trackingSupabase.rpc('track_product_event', {
+      p_visitor_id: visitorId,
+      p_product_id: options.productId || null,
+      p_event_type: eventType,
+      p_quantity: Math.max(1, options.quantity ?? 1),
+      p_source_page: options.sourcePage ?? window.location.pathname,
+    });
+    if (error) throw error;
+  } catch (error) {
+    console.warn(`Tracking event "${eventType}" failed; the website will continue normally.`, error);
+  }
+}
+
+export const trackWebsiteVisited = () => trackWebsiteEvent('website_visited');
+export const trackPageViewed = () => trackWebsiteEvent('page_viewed');
+export const trackProductView = (productId: string) =>
+  trackWebsiteEvent('product_viewed', { productId });
+export const trackProductQuickView = (productId: string) =>
+  trackWebsiteEvent('product_quick_viewed', { productId });
+export const trackProductShared = (productId: string) =>
+  trackWebsiteEvent('product_shared', { productId });
+export const trackAddToCart = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('add_to_cart', { productId, quantity });
+export const trackRemoveFromCart = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('remove_from_cart', { productId, quantity });
+export const trackWhatsAppPurchaseClicked = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('whatsapp_purchase_clicked', { productId, quantity });
+
+// Prepared for future UI integrations. These do not emit until explicitly called.
+export const trackSpinOpenedFromProduct = (productId: string) =>
+  trackWebsiteEvent('spin_opened_from_product', { productId });
+
+export const trackCashOffProductSelected = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_selected', { productId });
+export const trackCashOffProductChanged = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_changed', { productId });
+export const trackCashOffProductRemoved = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_removed', { productId });
+export const trackFullWheelOpened = (source: 'overlay' | 'cart') =>
+  trackWebsiteEvent(source === 'overlay' ? 'full_wheel_opened_from_overlay' : 'full_wheel_opened_from_cart');
+export const trackReturnedFromFullWheel = () => trackWebsiteEvent('returned_from_full_wheel');
+
+export async function openSpinWheelFromProduct(productId: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const wheelUrl = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
+  if (!wheelUrl) throw new Error('The Spin & Save wheel is not configured.');
+
+  const visitorId = await registerVisitor();
+  if (!visitorId) throw new Error('We could not prepare your wheel session.');
+
+  await trackSpinOpenedFromProduct(productId);
+
+  const { data: handoffToken, error } = await trackingSupabase.rpc(
+    'create_website_wheel_handoff',
+    {
+      p_visitor_id: visitorId,
+      p_product_id: productId,
+      p_source_path: window.location.pathname,
+    },
+  );
+
+  if (error || !handoffToken) {
+    throw new Error('We could not securely connect your account to the wheel.');
   }
 
-  return visitorId;
+  const destination = new URL(wheelUrl);
+  destination.searchParams.set('handoff', handoffToken);
+  window.location.assign(destination.toString());
 }
 
-export async function registerVisitor(referralCode?: string | null) {
-  const visitorId = getVisitorId();
-  if (!visitorId) return null;
-
-  await trackingSupabase.rpc('register_visitor_session', {
+export async function createFullWheelUrl(productId?: string | null): Promise<string> {
+  if (typeof window === 'undefined') throw new Error('The wheel is only available in your browser.');
+  const wheelUrl = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
+  if (!wheelUrl) throw new Error('The full Spin & Save website is not configured.');
+  const visitorId = await registerVisitor();
+  if (!visitorId) throw new Error('We could not prepare your wheel session.');
+  const { data, error } = await trackingSupabase.rpc('create_website_wheel_handoff', {
     p_visitor_id: visitorId,
-    p_referral_code: referralCode || null,
-    p_ip_address: null,
-    p_user_agent: navigator.userAgent,
+    p_product_id: productId || null,
+    p_source_path: window.location.pathname,
   });
-
-  return visitorId;
+  if (error || !data) throw new Error('We could not securely connect to the full wheel. Please retry.');
+  const destination = new URL(wheelUrl);
+  destination.search = '';
+  destination.searchParams.set('handoff', String(data));
+  return destination.toString();
 }
-
-export async function trackProductView(productId: string) {
-  const visitorId = getVisitorId();
-  if (!visitorId) return;
-
-  await trackingSupabase.rpc('track_product_event', {
-    p_visitor_id: visitorId,
-    p_product_id: productId,
-    p_event_type: 'view',
-    p_quantity: 1,
-    p_source_page: window.location.pathname,
-  });
-}
-
-export async function trackAddToCart(productId: string, quantity = 1) {
-  const visitorId = getVisitorId();
-  if (!visitorId) return;
-
-  await trackingSupabase.rpc('track_product_event', {
-    p_visitor_id: visitorId,
-    p_product_id: productId,
-    p_event_type: 'add_to_cart',
-    p_quantity: quantity,
-    p_source_page: window.location.pathname,
-  });
-}
+export const trackRewardViewed = () => trackWebsiteEvent('reward_viewed');
+export const trackRewardApplied = () => trackWebsiteEvent('reward_applied');
 
 export async function createQuoteLead({
   productId,
@@ -89,10 +196,9 @@ export async function createQuoteLead({
     p_phone: phone,
     p_email: email || null,
     p_notes: notes || null,
-    p_source_page: window.location.pathname,
+    p_source_page: typeof window === 'undefined' ? null : window.location.pathname,
   });
 
   if (error) throw error;
-
   return data;
 }

@@ -1,0 +1,379 @@
+.products-page .wheel-overlay {
+  align-items: center;
+  padding: 20px;
+  background: rgba(10, 26, 58, .2);
+  backdrop-filter: blur(3px);
+}
+
+.products-page .cashoff-reference-dialog {
+  position: relative;
+  width: min(570px, calc(100vw - 40px));
+  min-height: 0;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 28px;
+  background: rgba(250, 252, 255, .92);
+  box-shadow: 0 24px 70px rgba(10, 31, 72, .2);
+  backdrop-filter: blur(14px);
+}
+
+.products-page .cashoff-reference-dialog > .wheel-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e3e9f2;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .85);
+  color: #10213f;
+  box-shadow: 0 5px 16px rgba(15, 31, 62, .08);
+}
+
+.products-page .cashoff-reference-content {
+  width: min(100% - 48px, 480px);
+  padding: 38px 0 22px;
+}
+
+.products-page .cashoff-reference-kicker {
+  min-height: 25px;
+  margin: 0 auto;
+  padding: 4px 10px;
+  border-color: #d7e1f1;
+  background: rgba(255, 255, 255, .74);
+  font-size: .48rem;
+}
+
+.products-page .cashoff-reference-content h2 {
+  margin: 14px 0 0;
+  font-size: clamp(1.8rem, 5vw, 2.45rem);
+  letter-spacing: -.055em;
+}
+
+.products-page .cashoff-wheel-shell {
+  width: min(350px, 66vh, 76vw);
+  margin: 22px auto 20px;
+  padding: 10px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 17px 40px rgba(28, 58, 116, .14), 0 0 0 7px rgba(229, 236, 248, .62);
+}
+
+.products-page .cashoff-result-card {
+  min-height: 0;
+  margin: -3px auto 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(197, 213, 239, .78);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .7);
+}
+
+.products-page .cashoff-result-card strong { font-size: .72rem; }
+
+.products-page .cashoff-main-spin {
+  min-height: 49px;
+  margin-top: 0;
+  border-radius: 14px;
+  font-size: .72rem;
+}
+
+.products-page .cashoff-quick-actions {
+  width: 100%;
+  margin-top: 13px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 9px 24px rgba(22, 55, 116, .07);
+}
+
+.products-page .cashoff-quick-actions button {
+  min-height: 64px;
+  padding: 10px 5px;
+  gap: 5px;
+  background: transparent;
+}
+
+.products-page .cashoff-quick-actions button svg { width: 17px; height: 17px; }
+.products-page .cashoff-quick-actions button span { font-size: .43rem; letter-spacing: .025em; }
+
+.products-page .cashoff-quick-actions .cashoff-action-emoji {
+  display: block;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0;
+  filter: saturate(.96);
+}
+
+@media (max-width: 600px) {
+  .products-page .wheel-overlay { align-items: center; padding: 12px; }
+
+  .products-page .cashoff-reference-dialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 22px;
+  }
+
+  .products-page .cashoff-reference-dialog > .wheel-close {
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .products-page .cashoff-reference-content {
+    width: calc(100% - 28px);
+    padding: 27px 0 16px;
+  }
+
+  .products-page .cashoff-reference-kicker { min-height: 22px; font-size: .42rem; }
+
+  .products-page .cashoff-reference-content h2 {
+    margin-top: 11px;
+    font-size: clamp(1.42rem, 7vw, 1.85rem);
+  }
+
+  .products-page .cashoff-wheel-shell {
+    width: min(270px, 68vw, 42vh);
+    margin: 17px auto 16px;
+    padding: 8px;
+  }
+
+  .products-page .cashoff-main-spin { min-height: 46px; }
+
+  .products-page .cashoff-quick-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 11px;
+  }
+
+  .products-page .cashoff-quick-actions button {
+    min-height: 58px;
+    padding: 8px 2px;
+    border-right: 1px solid #e4ebf5;
+    border-bottom: 0;
+  }
+
+  .products-page .cashoff-quick-actions button:nth-child(2) { border-right: 1px solid #e4ebf5; }
+  .products-page .cashoff-quick-actions button:nth-child(-n + 2) { border-bottom: 0; }
+  .products-page .cashoff-quick-actions button:last-child { border-right: 0; }
+}
+
+/* 24-hour cash challenge */
+.products-page .cash-challenge-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 18px auto 2px;
+  padding: 13px 14px 17px;
+  overflow: hidden;
+  border: 1px solid #dce8e2;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #f7fcf9 0%, #eef8f3 100%);
+  color: #153f2d;
+  text-align: left;
+}
+
+.products-page .cash-challenge-strip.active {
+  border-color: #b7dfc8;
+  background: linear-gradient(135deg, #f3fbf6 0%, #e5f6ed 100%);
+  box-shadow: 0 10px 24px rgba(38, 122, 79, .09);
+}
+
+.products-page .cash-challenge-strip.cash_eligible {
+  border-color: #9fd2b4;
+  background: linear-gradient(135deg, #eaf8f0 0%, #d9f1e3 100%);
+}
+
+.products-page .cash-challenge-strip.converted_to_cash_off {
+  border-color: #d6e1f1;
+  background: linear-gradient(135deg, #f7faff 0%, #edf3fc 100%);
+  color: #173d78;
+}
+
+.products-page .cash-challenge-strip-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1b8a58;
+  box-shadow: 0 5px 14px rgba(40, 110, 74, .1);
+}
+
+.products-page .cash-challenge-strip-copy {
+  min-width: 0;
+}
+
+.products-page .cash-challenge-strip-copy small,
+.products-page .cash-challenge-strip-balance small {
+  display: block;
+  color: #56816b;
+  font-size: .48rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.products-page .cash-challenge-strip-copy strong {
+  display: block;
+  margin-top: 2px;
+  color: #155b39;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.08rem;
+  font-weight: 950;
+  letter-spacing: .035em;
+}
+
+.products-page .cash-challenge-strip-copy p {
+  margin: 3px 0 0;
+  color: #4c6c5b;
+  font-size: .58rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.products-page .cash-challenge-strip-balance {
+  min-width: 86px;
+  text-align: right;
+}
+
+.products-page .cash-challenge-strip-balance strong {
+  display: block;
+  margin-top: 2px;
+  color: #0b2f20;
+  font-size: .94rem;
+  font-weight: 950;
+}
+
+.products-page .cash-challenge-strip-balance span {
+  display: block;
+  margin-top: 2px;
+  color: #6d8779;
+  font-size: .45rem;
+  font-weight: 800;
+}
+
+.products-page .cash-challenge-strip-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: rgba(45, 129, 83, .11);
+}
+
+.products-page .cash-challenge-strip-progress i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #31a66d 0%, #8bd5ad 100%);
+  transition: width .45s ease;
+}
+
+.products-page .cashoff-result-card small {
+  display: block;
+  margin-top: 4px;
+  color: #5e6c82;
+  font-size: .55rem;
+  font-weight: 700;
+}
+
+.products-page .cashoff-wallet-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.products-page .cashoff-time-value {
+  font-variant-numeric: tabular-nums;
+  font-size: .88rem !important;
+}
+
+.products-page .cash-challenge-rules {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #dce9e2;
+  border-radius: 13px;
+  background: #f5fbf7;
+  color: #24734d;
+  text-align: left;
+}
+
+.products-page .cash-challenge-rules svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.products-page .cash-challenge-rules strong {
+  display: block;
+  color: #174c34;
+  font-size: .62rem;
+  font-weight: 900;
+}
+
+.products-page .cash-challenge-rules p {
+  margin: 3px 0 0;
+  color: #527160;
+  font-size: .54rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.products-page .wheel-fab-copy small {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .products-page .cash-challenge-strip {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+    margin-top: 13px;
+    padding: 10px 11px 14px;
+  }
+
+  .products-page .cash-challenge-strip-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .products-page .cash-challenge-strip-copy strong {
+    font-size: .9rem;
+  }
+
+  .products-page .cash-challenge-strip-copy p {
+    font-size: .51rem;
+  }
+
+  .products-page .cash-challenge-strip-balance {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    min-width: 0;
+    padding-left: 43px;
+    text-align: left;
+  }
+
+  .products-page .cash-challenge-strip-balance small,
+  .products-page .cash-challenge-strip-balance span {
+    display: inline;
+  }
+
+  .products-page .cash-challenge-strip-balance strong {
+    margin: 0;
+    font-size: .78rem;
+  }
+
+  .products-page .cashoff-wallet-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .products-page .cashoff-wallet-grid article:last-child {
+    grid-column: 1 / -1;
+  }
+}
