@@ -1,10 +1,13 @@
-﻿"use client";
+"use client";
 
 export const dynamic = "force-dynamic";
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import "./products.css";
+import "./cart-polish.css";
+import "./wheel-overlay-polish.css";
+import SpinSaveOverlay from "./SpinSaveOverlay";
 import {
   ShoppingCart,
   Search,
@@ -29,6 +32,7 @@ import {
   Loader2,
   AlertCircle,
   Share2,
+  ExternalLink,
 } from "lucide-react";
 import CTA from "@/components/CTA";
 import { brand } from "@/lib/site-data";
@@ -36,7 +40,6 @@ import {
   trackingSupabase as supabase,
   registerVisitor,
   trackAddToCart,
-  openSpinWheelFromProduct,
   trackPageViewed,
   trackProductQuickView,
   trackProductShared,
@@ -44,6 +47,13 @@ import {
   trackRemoveFromCart,
   trackWebsiteVisited,
   trackWhatsAppPurchaseClicked,
+  createFullWheelUrl,
+  getVisitorId,
+  trackCashOffProductChanged,
+  trackCashOffProductRemoved,
+  trackCashOffProductSelected,
+  trackFullWheelOpened,
+  trackReturnedFromFullWheel,
 } from "@/lib/tracking";
 
 interface ProductImage {
@@ -115,6 +125,40 @@ const sortOptions = [
 
 const PLACEHOLDER_IMAGE = "";
 const PAGE_SIZE = 12;
+const CASH_OFF_SELECTION_KEY = "emmy_cash_off_product";
+const WHEEL_SESSION_KEY = "emmy_wheel_session";
+
+interface WheelState {
+  cash_off_balance: number;
+  spin_player?: { spins_remaining?: number; wallet_balance?: number; last_prize_won?: string; cashout_target?: number; spin_sequence_step?: number };
+  active_prizes?: Array<{ id?: string; label?: string; monetary_value?: number }>;
+  awarded_prizes?: Array<{ id?: string; prize_label?: string; result_label?: string; status?: string; created_at?: string }>;
+}
+
+interface WheelSpinResult {
+  label?: string;
+  result_type?: string;
+  cash_off_amount?: number;
+  cash_off_after?: number;
+  spin_log_id?: string;
+}
+
+const formatRewardMoney = (value: number) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
+
+const cleanPrizeLabel = (label?: string) =>
+  (label || "Reward").replace(/^(demo|test)\s+/i, "").trim();
+
+const wheelSegmentLabel = (label?: string) =>
+  cleanPrizeLabel(label)
+    .replace(/\s+cash[ -]?off$/i, " Cash")
+    .replace(/bonus spin/i, "Bonus")
+    .replace(/try again/i, "Retry");
 
 const formatPrice = (price: number) => {
   if (!price || price <= 0) return "Request Quote";
@@ -132,25 +176,57 @@ const extractWhatsAppNumber = (whatsappValue: string): string => {
   return whatsappValue.replace(/\D/g, "");
 };
 
-const buildCartWhatsAppUrl = (cart: CartItem[], whatsappValue: string): string => {
+const buildCartWhatsAppUrl = (
+  cart: CartItem[],
+  whatsappValue: string,
+  selectedCashOffProductId: string | null,
+  cashOffBalance: number,
+): string => {
   const phone = extractWhatsAppNumber(whatsappValue);
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const selectedItem = selectedCashOffProductId
+    ? cart.find((item) => item.id === selectedCashOffProductId) || null
+    : null;
+  const selectedSubtotal = selectedItem
+    ? selectedItem.price * selectedItem.quantity
+    : 0;
+  const cashOffRequested = selectedItem
+    ? Math.min(Math.max(0, cashOffBalance), selectedSubtotal)
+    : 0;
+  const estimatedTotal = Math.max(0, total - cashOffRequested);
 
   const lines = [
     "🛒 *New Order — Emmy Technology*",
     "",
-    ...cart.map((item, i) => {
+    ...cart.map((item, index) => {
       const subtotal = item.price * item.quantity;
-      return (
-        `${i + 1}. *${item.name}*\n` +
-        `   Qty: ${item.quantity} × ${formatPrice(item.price)}\n` +
-        `   Subtotal: ${formatPrice(subtotal)}`
-      );
+      const isCashOffItem = item.id === selectedCashOffProductId && cashOffRequested > 0;
+      const itemCashOff = isCashOffItem ? cashOffRequested : 0;
+      const estimatedItemTotal = Math.max(0, subtotal - itemCashOff);
+
+      return [
+        `${index + 1}. *${item.name}*`,
+        `   Qty: ${item.quantity} × ${formatPrice(item.price)}`,
+        `   Subtotal: ${formatPrice(subtotal)}`,
+        ...(isCashOffItem
+          ? [
+              `   Cash-Off requested: -${formatRewardMoney(itemCashOff)}`,
+              `   Estimated item total: ${formatPrice(estimatedItemTotal)}`,
+            ]
+          : []),
+      ].join("\n");
     }),
     "",
-    `*Order Total: ${formatPrice(total)}*`,
+    `*Order subtotal: ${formatPrice(total)}*`,
+    ...(cashOffRequested > 0
+      ? [
+          `*Cash-Off requested: -${formatRewardMoney(cashOffRequested)}*`,
+          `*Estimated order total: ${formatPrice(estimatedTotal)}*`,
+          "Cash-Off should be verified and applied when the order is confirmed.",
+        ]
+      : ["No Cash-Off has been selected for this order."]),
     "",
-    "Please confirm availability and delivery details. Thank you!",
+    "Please confirm availability, Cash-Off eligibility and delivery details. Thank you!",
   ];
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -327,15 +403,11 @@ function ProductCard({
   onAddToCart,
   onProductView,
   onQuickView,
-  onSpin,
-  spinning,
 }: {
   product: Product;
   onAddToCart: (product: Product) => void;
   onProductView: (product: Product) => void;
   onQuickView: (product: Product) => void;
-  onSpin: (product: Product) => void;
-  spinning: boolean;
 }) {
   const [isLiked, setIsLiked] = useState(false);
 
@@ -366,10 +438,6 @@ function ProductCard({
           aria-label="Add to wishlist"
         >
           <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-        </button>
-        <button className="card-spin-btn" onClick={() => onSpin(product)} disabled={spinning}>
-          {spinning ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
-          <span>{spinning ? "Connecting…" : "Spin & Save"}</span>
         </button>
 
         <div className="product-card-actions" onClick={(event) => event.stopPropagation()}>
@@ -427,8 +495,6 @@ function QuickViewModal({
   galleryError,
   onShare,
   onWhatsApp,
-  onSpin,
-  spinning,
 }: {
   product: Product | null;
   isOpen: boolean;
@@ -439,8 +505,6 @@ function QuickViewModal({
   galleryError: string | null;
   onShare: (product: Product) => void;
   onWhatsApp: (product: Product) => void;
-  onSpin: (product: Product) => void;
-  spinning: boolean;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
@@ -611,10 +675,6 @@ function QuickViewModal({
                 <Share2 size={16} />
                 Share Product
               </button>
-              <button className="btn modal-spin" onClick={() => onSpin(product)} disabled={spinning}>
-                {spinning ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-                {spinning ? "Connecting to wheel…" : "Spin & Save"}
-              </button>
             </div>
           </div>
         </div>
@@ -630,6 +690,12 @@ function CartDrawer({
   onUpdateQuantity,
   onRemove,
   onWhatsApp,
+  cashOffBalance,
+  selectedCashOffProductId,
+  onCashOffToggle,
+  onOpenFullWheel,
+  fullWheelBusy,
+  fullWheelError,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -637,10 +703,34 @@ function CartDrawer({
   onUpdateQuantity: (id: string, qty: number) => void;
   onRemove: (id: string) => void;
   onWhatsApp: (cart: CartItem[]) => void;
+  cashOffBalance: number;
+  selectedCashOffProductId: string | null;
+  onCashOffToggle: (id: string) => void;
+  onOpenFullWheel: () => void;
+  fullWheelBusy: boolean;
+  fullWheelError: string | null;
 }) {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const checkoutUrl = cart.length > 0 ? buildCartWhatsAppUrl(cart, brand.whatsapp) : "#";
+  const selectedCashOffItem = selectedCashOffProductId
+    ? cart.find((item) => item.id === selectedCashOffProductId) || null
+    : null;
+  const selectedCashOffSubtotal = selectedCashOffItem
+    ? selectedCashOffItem.price * selectedCashOffItem.quantity
+    : 0;
+  const cashOffRequested = selectedCashOffItem
+    ? Math.min(Math.max(0, cashOffBalance), selectedCashOffSubtotal)
+    : 0;
+  const estimatedTotal = Math.max(0, total - cashOffRequested);
+  const checkoutUrl =
+    cart.length > 0
+      ? buildCartWhatsAppUrl(
+          cart,
+          brand.whatsapp,
+          selectedCashOffProductId,
+          cashOffBalance,
+        )
+      : "#";
 
   return (
     <>
@@ -666,7 +756,7 @@ function CartDrawer({
           <>
             <div className="cart-items">
               {cart.map((item) => (
-                <div key={item.id} className="cart-item">
+                <div key={item.id} className={`cart-item ${selectedCashOffProductId === item.id ? "cash-off-selected" : ""}`}>
                   <div className="cart-item-image">
                     <OptimizedProductImage
                       src={item.image}
@@ -694,24 +784,59 @@ function CartDrawer({
                         <Trash2 size={14} />
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      className="cash-off-toggle"
+                      aria-pressed={selectedCashOffProductId === item.id}
+                      onClick={() => onCashOffToggle(item.id)}
+                      disabled={cashOffBalance <= 0}
+                    >
+                      <span>
+                        <strong>{selectedCashOffProductId === item.id ? "Cash-Off selected" : "Use Cash-Off"}</strong>
+                        <small>{selectedCashOffProductId === item.id ? "Tap to remove" : `${formatRewardMoney(cashOffBalance)} available`}</small>
+                      </span>
+                      <span className="cash-off-check">{selectedCashOffProductId === item.id ? <Check size={13} /> : null}</span>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="cart-footer">
-              <div className="cart-subtotal">
-                <span>Subtotal</span>
-                <span>{formatPrice(total)}</span>
+              <div className="cart-order-summary">
+                <div className="cart-subtotal">
+                  <span>Order subtotal</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
+                {cashOffRequested > 0 ? (
+                  <>
+                    <div className="cart-cashoff-line">
+                      <span>Cash-Off requested</span>
+                      <strong>−{formatRewardMoney(cashOffRequested)}</strong>
+                    </div>
+                    <div className="cart-estimated-total">
+                      <span>Estimated total</span>
+                      <strong>{formatPrice(estimatedTotal)}</strong>
+                    </div>
+                    <small>
+                      Applied only after EmmyTech confirms the order and reward eligibility.
+                    </small>
+                  </>
+                ) : (
+                  <small>Cash-Off is available but not applied to this order.</small>
+                )}
               </div>
-              <p className="cart-note">Shipping and availability will be confirmed by EmmyTech.</p>
+              <div className="cart-wheel-summary">
+                <span><Zap size={15} /> Available Cash-Off <strong>{formatRewardMoney(cashOffBalance)}</strong></span>
+                <button className="cart-full-wheel-link" onClick={onOpenFullWheel} disabled={fullWheelBusy}>
+                  {fullWheelBusy ? <Loader2 size={15} className="animate-spin" /> : <ExternalLink size={15} />}
+                  Open full wheel
+                </button>
+                {fullWheelError && <small role="alert">{fullWheelError}</small>}
+              </div>
               <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn primary cart-checkout" onClick={() => onWhatsApp(cart)}>
                 <ShoppingCart size={16} />
-                Proceed to Checkout
-              </a>
-              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn secondary cart-whatsapp" onClick={() => onWhatsApp(cart)}>
-                <Zap size={15} />
-                Complete on WhatsApp
+                Continue to checkout
               </a>
               <button className="btn ghost cart-continue" onClick={onClose}>
                 Continue Shopping
@@ -723,6 +848,7 @@ function CartDrawer({
     </>
   );
 }
+
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -752,6 +878,15 @@ export default function ProductsPage() {
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [spinProductId, setSpinProductId] = useState<string | null>(null);
   const [spinError, setSpinError] = useState<string | null>(null);
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [wheelState, setWheelState] = useState<WheelState | null>(null);
+  const [wheelLoading, setWheelLoading] = useState(false);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelSpinResult, setWheelSpinResult] = useState<WheelSpinResult | null>(null);
+  const [wheelSpinTarget, setWheelSpinTarget] = useState<WheelSpinResult | null>(null);
+  const [selectedCashOffProductId, setSelectedCashOffProductId] = useState<string | null>(null);
+  const [fullWheelBusy, setFullWheelBusy] = useState(false);
+  const [fullWheelError, setFullWheelError] = useState<string | null>(null);
   const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
   const galleryRequestSequence = useRef(0);
   const requestSequence = useRef(0);
@@ -759,6 +894,53 @@ export default function ProductsPage() {
   const [controlBarVisible, setControlBarVisible] = useState(true);
   const lastScrollY = useRef(0);
   const scrollTicking = useRef(false);
+  const wheelLauncherRef = useRef<HTMLButtonElement>(null);
+
+  const refreshWheelState = useCallback(async () => {
+    const token = window.localStorage.getItem(WHEEL_SESSION_KEY);
+    if (!token) return null;
+    const { data, error } = await supabase.rpc("get_canonical_wheel_state", { p_session_token: token });
+    if (error) {
+      window.localStorage.removeItem(WHEEL_SESSION_KEY);
+      throw error;
+    }
+    const next = data as WheelState;
+    setWheelState(next);
+    return next;
+  }, []);
+
+  const ensureWheelState = useCallback(async () => {
+    try {
+      const existing = await refreshWheelState();
+      if (existing) return existing;
+    } catch (error) {
+      console.warn("Stored wheel session could not be refreshed.", error);
+    }
+    const visitorId = getVisitorId();
+    if (!visitorId) throw new Error("We could not prepare your reward session.");
+    const { data, error } = await supabase.rpc("bootstrap_canonical_wheel_visitor", {
+      p_visitor_id: visitorId, p_full_name: null, p_phone: null, p_email: null, p_referral_code: null,
+    });
+    if (error || !data?.wheel_session_token) throw error || new Error("Reward session unavailable.");
+    window.localStorage.setItem(WHEEL_SESSION_KEY, data.wheel_session_token);
+    setWheelState(data.state as WheelState);
+    return data.state as WheelState;
+  }, [refreshWheelState]);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(CASH_OFF_SELECTION_KEY);
+    if (stored) setSelectedCashOffProductId(stored);
+    void ensureWheelState().catch((error) => console.warn("Wheel preload failed.", error));
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || !window.sessionStorage.getItem("emmy_full_wheel_open")) return;
+      window.sessionStorage.removeItem("emmy_full_wheel_open");
+      void refreshWheelState().catch((error) => console.warn("Wheel return refresh failed.", error));
+      void trackReturnedFromFullWheel();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
+  }, [ensureWheelState, refreshWheelState]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -933,7 +1115,12 @@ export default function ProductsPage() {
       if (removed) void trackRemoveFromCart(removed.id, removed.quantity);
       return prev.filter((item) => item.id !== id);
     });
-  }, []);
+    if (selectedCashOffProductId === id) {
+      setSelectedCashOffProductId(null);
+      window.localStorage.removeItem(CASH_OFF_SELECTION_KEY);
+      void trackCashOffProductRemoved(id);
+    }
+  }, [selectedCashOffProductId]);
 
   const openProductModal = useCallback(async (product: Product, eventType: "view" | "quick_view") => {
     const galleryRequestId = ++galleryRequestSequence.current;
@@ -1009,24 +1196,89 @@ export default function ProductsPage() {
     items.forEach((item) => void trackWhatsAppPurchaseClicked(item.id, item.quantity));
   }, []);
 
-  const openSpinWheel = useCallback(async (product: Product) => {
-    setSpinProductId(product.id);
+  const openSpinWheel = useCallback(async (product?: Product) => {
+    setSpinProductId(product?.id || null);
     setSpinError(null);
+    setWheelSpinResult(null);
+    setWheelSpinTarget(null);
+    setWheelOpen(true);
+    setWheelLoading(true);
     try {
-      await openSpinWheelFromProduct(product.id);
+      await ensureWheelState();
     } catch (error) {
-      console.warn('Spin & Save handoff failed.', error);
-      setSpinError(
-        error instanceof Error ? error.message : 'The secure wheel connection is unavailable right now.',
-      );
-      const fallback = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
-      if (fallback && window.confirm('Your account could not be connected. Open the wheel without account handoff?')) {
-        window.location.assign(fallback);
-      }
+      console.warn('Spin & Save overlay failed.', error);
+      setSpinError(error instanceof Error ? error.message : 'Your rewards are unavailable right now. Please retry.');
     } finally {
+      setWheelLoading(false);
       setSpinProductId(null);
     }
+  }, [ensureWheelState]);
+
+  const spinNativeWheel = useCallback(async () => {
+    const token = window.localStorage.getItem(WHEEL_SESSION_KEY);
+    if (!token) return void openSpinWheel();
+    setWheelSpinning(true);
+    setSpinError(null);
+    try {
+      const { data, error } = await supabase.rpc("complete_canonical_wheel_spin", {
+        p_session_token: token, p_request_id: window.crypto.randomUUID(),
+      });
+      if (error) throw error;
+      const nextResult = (data?.result || null) as WheelSpinResult | null;
+      setWheelSpinTarget(nextResult);
+      await new Promise((resolve) => window.setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 350 : 6000));
+      setWheelState((data?.state || data) as WheelState);
+      setWheelSpinResult(nextResult);
+    } catch (error) {
+      setSpinError(error instanceof Error ? error.message : "The spin could not be completed. Please retry.");
+    } finally { setWheelSpinning(false); }
+  }, [openSpinWheel]);
+
+  const closeSpinWheel = useCallback(() => {
+    setWheelOpen(false);
+    window.requestAnimationFrame(() => wheelLauncherRef.current?.focus());
   }, []);
+
+  const viewCartFromWheel = useCallback(() => {
+    setWheelOpen(false);
+    setIsCartOpen(true);
+  }, []);
+
+  const openFullWheel = useCallback(async (source: "overlay" | "cart") => {
+    setFullWheelBusy(true);
+    setFullWheelError(null);
+    const tab = window.open("about:blank", "_blank");
+    if (tab) {
+      tab.opener = null;
+      tab.document.title = "Opening Spin & Save…";
+      tab.document.body.textContent = "Securely opening Spin & Save…";
+    }
+    try {
+      if (!tab) throw new Error("Your browser blocked the new tab. Allow pop-ups and retry.");
+      await ensureWheelState();
+      const destination = await createFullWheelUrl(spinProductId);
+      tab.location.replace(destination);
+      window.sessionStorage.setItem("emmy_full_wheel_open", "1");
+      void trackFullWheelOpened(source);
+    } catch (error) {
+      tab?.close();
+      setFullWheelError(error instanceof Error ? error.message : "The full wheel could not be opened. Please retry.");
+    } finally { setFullWheelBusy(false); }
+  }, [ensureWheelState, spinProductId]);
+
+  const toggleCashOff = useCallback((productId: string) => {
+    if (selectedCashOffProductId === productId) {
+      setSelectedCashOffProductId(null);
+      window.localStorage.removeItem(CASH_OFF_SELECTION_KEY);
+      void trackCashOffProductRemoved(productId);
+      return;
+    }
+    if (selectedCashOffProductId && !window.confirm("Move Cash-Off to this product?")) return;
+    const changed = Boolean(selectedCashOffProductId);
+    setSelectedCashOffProductId(productId);
+    window.localStorage.setItem(CASH_OFF_SELECTION_KEY, productId);
+    void (changed ? trackCashOffProductChanged(productId) : trackCashOffProductSelected(productId));
+  }, [selectedCashOffProductId]);
 
   const closeQuickView = useCallback(() => {
     galleryRequestSequence.current += 1;
@@ -1036,6 +1288,8 @@ export default function ProductsPage() {
   }, []);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const launcherSpins = Number(wheelState?.spin_player?.spins_remaining || 0);
+  const launcherCashOff = Number(wheelState?.cash_off_balance || 0);
 
   return (
     <main className="products-page">
@@ -1194,10 +1448,19 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <button className="cart-fab" onClick={() => setIsCartOpen(true)}>
-        <ShoppingCart size={20} />
-        {cartItemCount > 0 && <span className="cart-fab-badge">{cartItemCount}</span>}
-      </button>
+      <div className="store-action-dock">
+        <button ref={wheelLauncherRef} className="wheel-fab" onClick={() => void openSpinWheel()} aria-label="Open Spin & Save">
+          <span className="wheel-fab-icon" aria-hidden="true"><i /></span>
+          <span className="wheel-fab-copy">
+            <strong>Spin &amp; Save</strong>
+            <small>{launcherCashOff > 0 ? `${formatRewardMoney(launcherCashOff)} available` : launcherSpins > 0 ? `${launcherSpins} spin${launcherSpins === 1 ? "" : "s"} ready` : "Tap to play"}</small>
+          </span>
+        </button>
+        <button className="cart-fab" onClick={() => setIsCartOpen(true)} aria-label={`Open cart with ${cartItemCount} items`}>
+          <ShoppingCart size={20} />
+          {cartItemCount > 0 && <span className="cart-fab-badge">{cartItemCount}</span>}
+        </button>
+      </div>
 
       <section className="products-grid-section">
         <div className="section-shell">
@@ -1216,8 +1479,6 @@ export default function ProductsPage() {
                     onAddToCart={addToCart}
                     onProductView={openProductView}
                     onQuickView={openQuickView}
-                    onSpin={(selected) => void openSpinWheel(selected)}
-                    spinning={spinProductId === product.id}
                   />
                 ))}
               </div>
@@ -1294,8 +1555,6 @@ export default function ProductsPage() {
         galleryError={galleryError}
         onShare={shareProduct}
         onWhatsApp={(product) => void trackWhatsAppPurchaseClicked(product.id, 1)}
-        onSpin={(product) => void openSpinWheel(product)}
-        spinning={spinProductId === quickViewProduct?.id}
       />
 
       <CartDrawer
@@ -1305,6 +1564,26 @@ export default function ProductsPage() {
         onUpdateQuantity={updateQuantity}
         onRemove={removeFromCart}
         onWhatsApp={trackCartWhatsApp}
+        cashOffBalance={Number(wheelState?.cash_off_balance || 0)}
+        selectedCashOffProductId={selectedCashOffProductId}
+        onCashOffToggle={toggleCashOff}
+        onOpenFullWheel={() => void openFullWheel("cart")}
+        fullWheelBusy={fullWheelBusy}
+        fullWheelError={fullWheelError}
+      />
+      <SpinSaveOverlay
+        open={wheelOpen}
+        state={wheelState}
+        loading={wheelLoading}
+        spinning={wheelSpinning}
+        openingFullWheel={fullWheelBusy}
+        error={spinError || fullWheelError}
+        result={wheelSpinResult}
+        spinTarget={wheelSpinTarget}
+        onClose={closeSpinWheel}
+        onSpin={() => void spinNativeWheel()}
+        onOpenFull={() => void openFullWheel("overlay")}
+        onViewCart={viewCartFromWheel}
       />
     </main>
   );

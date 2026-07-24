@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">EmmyTech accessories demo</title><desc id="desc">Branded accessories placeholder for local testing</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#edf4ff"/><stop offset="1" stop-color="#fff6da"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#032489" flood-opacity=".18"/></filter></defs>
+  <rect width="800" height="600" fill="url(#bg)"/><circle cx="120" cy="105" r="90" fill="#ffb100" opacity=".12"/><circle cx="690" cy="510" r="135" fill="#032489" opacity=".07"/>
+  <g filter="url(#shadow)" fill="none" stroke="#032489" stroke-width="28" stroke-linecap="round"><path d="M245 330v-72a155 155 0 0 1 310 0v72"/><rect x="205" y="300" width="85" height="150" rx="38" fill="#032489" stroke="none"/><rect x="510" y="300" width="85" height="150" rx="38" fill="#032489" stroke="none"/></g>
+  <rect x="280" y="235" width="240" height="95" rx="20" fill="#fff"/><text x="400" y="276" text-anchor="middle" font-family="Arial,sans-serif" font-size="27" font-weight="800" fill="#032489">EMMYTECH</text><text x="400" y="309" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#b06e00">ACCESSORIES</text>
+  <text x="400" y="535" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="800" fill="#032489">Local demo product</text>
+</svg>

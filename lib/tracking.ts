@@ -20,6 +20,12 @@ export type WebsiteEventType =
   | 'remove_from_cart'
   | 'whatsapp_purchase_clicked'
   | 'spin_opened_from_product'
+  | 'cash_off_product_selected'
+  | 'cash_off_product_changed'
+  | 'cash_off_product_removed'
+  | 'full_wheel_opened_from_overlay'
+  | 'full_wheel_opened_from_cart'
+  | 'returned_from_full_wheel'
   | 'reward_viewed'
   | 'reward_applied';
 
@@ -108,6 +114,16 @@ export const trackWhatsAppPurchaseClicked = (productId: string, quantity = 1) =>
 export const trackSpinOpenedFromProduct = (productId: string) =>
   trackWebsiteEvent('spin_opened_from_product', { productId });
 
+export const trackCashOffProductSelected = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_selected', { productId });
+export const trackCashOffProductChanged = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_changed', { productId });
+export const trackCashOffProductRemoved = (productId: string) =>
+  trackWebsiteEvent('cash_off_product_removed', { productId });
+export const trackFullWheelOpened = (source: 'overlay' | 'cart') =>
+  trackWebsiteEvent(source === 'overlay' ? 'full_wheel_opened_from_overlay' : 'full_wheel_opened_from_cart');
+export const trackReturnedFromFullWheel = () => trackWebsiteEvent('returned_from_full_wheel');
+
 export async function openSpinWheelFromProduct(productId: string): Promise<void> {
   if (typeof window === 'undefined') return;
 
@@ -135,6 +151,24 @@ export async function openSpinWheelFromProduct(productId: string): Promise<void>
   const destination = new URL(wheelUrl);
   destination.searchParams.set('handoff', handoffToken);
   window.location.assign(destination.toString());
+}
+
+export async function createFullWheelUrl(productId?: string | null): Promise<string> {
+  if (typeof window === 'undefined') throw new Error('The wheel is only available in your browser.');
+  const wheelUrl = process.env.NEXT_PUBLIC_SPIN_WHEEL_URL;
+  if (!wheelUrl) throw new Error('The full Spin & Save website is not configured.');
+  const visitorId = await registerVisitor();
+  if (!visitorId) throw new Error('We could not prepare your wheel session.');
+  const { data, error } = await trackingSupabase.rpc('create_website_wheel_handoff', {
+    p_visitor_id: visitorId,
+    p_product_id: productId || null,
+    p_source_path: window.location.pathname,
+  });
+  if (error || !data) throw new Error('We could not securely connect to the full wheel. Please retry.');
+  const destination = new URL(wheelUrl);
+  destination.search = '';
+  destination.searchParams.set('handoff', String(data));
+  return destination.toString();
 }
 export const trackRewardViewed = () => trackWebsiteEvent('reward_viewed');
 export const trackRewardApplied = () => trackWebsiteEvent('reward_applied');
