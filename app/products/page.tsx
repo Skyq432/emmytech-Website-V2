@@ -28,10 +28,22 @@ import {
   Watch,
   Loader2,
   AlertCircle,
+  Share2,
 } from "lucide-react";
 import CTA from "@/components/CTA";
 import { brand } from "@/lib/site-data";
-import { trackingSupabase as supabase, registerVisitor, trackProductView, trackAddToCart } from "@/lib/tracking";
+import {
+  trackingSupabase as supabase,
+  registerVisitor,
+  trackAddToCart,
+  trackPageViewed,
+  trackProductQuickView,
+  trackProductShared,
+  trackProductView,
+  trackRemoveFromCart,
+  trackWebsiteVisited,
+  trackWhatsAppPurchaseClicked,
+} from "@/lib/tracking";
 
 interface ProductImage {
   id?: string;
@@ -312,17 +324,19 @@ function StarRating({ rating, reviews }: { rating: number; reviews: number }) {
 function ProductCard({
   product,
   onAddToCart,
+  onProductView,
   onQuickView,
 }: {
   product: Product;
   onAddToCart: (product: Product) => void;
+  onProductView: (product: Product) => void;
   onQuickView: (product: Product) => void;
 }) {
   const [isLiked, setIsLiked] = useState(false);
 
   return (
     <div className="product-card-ecom">
-      <div className="product-card-image-wrapper">
+      <div className="product-card-image-wrapper" onClick={() => onProductView(product)}>
         <div className="product-card-image">
           <OptimizedProductImage
             src={product.image}
@@ -340,13 +354,16 @@ function ProductCard({
 
         <button
           className={`product-wishlist-btn ${isLiked ? "liked" : ""}`}
-          onClick={() => setIsLiked(!isLiked)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsLiked(!isLiked);
+          }}
           aria-label="Add to wishlist"
         >
           <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
         </button>
 
-        <div className="product-card-actions">
+        <div className="product-card-actions" onClick={(event) => event.stopPropagation()}>
           <button className="product-action-btn" onClick={() => onQuickView(product)}>
             Quick View
           </button>
@@ -399,6 +416,8 @@ function QuickViewModal({
   gallery,
   galleryLoading,
   galleryError,
+  onShare,
+  onWhatsApp,
 }: {
   product: Product | null;
   isOpen: boolean;
@@ -407,6 +426,8 @@ function QuickViewModal({
   gallery: string[];
   galleryLoading: boolean;
   galleryError: string | null;
+  onShare: (product: Product) => void;
+  onWhatsApp: (product: Product) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
@@ -568,10 +589,15 @@ function QuickViewModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn secondary modal-whatsapp"
+                onClick={() => onWhatsApp(product)}
               >
                 <Zap size={16} />
                 Buy on WhatsApp
               </a>
+              <button className="btn ghost" onClick={() => onShare(product)}>
+                <Share2 size={16} />
+                Share Product
+              </button>
             </div>
           </div>
         </div>
@@ -586,12 +612,14 @@ function CartDrawer({
   cart,
   onUpdateQuantity,
   onRemove,
+  onWhatsApp,
 }: {
   isOpen: boolean;
   onClose: () => void;
   cart: CartItem[];
   onUpdateQuantity: (id: string, qty: number) => void;
   onRemove: (id: string) => void;
+  onWhatsApp: (cart: CartItem[]) => void;
 }) {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -660,11 +688,11 @@ function CartDrawer({
                 <span>{formatPrice(total)}</span>
               </div>
               <p className="cart-note">Shipping and availability will be confirmed by EmmyTech.</p>
-              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn primary cart-checkout">
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn primary cart-checkout" onClick={() => onWhatsApp(cart)}>
                 <ShoppingCart size={16} />
                 Proceed to Checkout
               </a>
-              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn secondary cart-whatsapp">
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="btn secondary cart-whatsapp" onClick={() => onWhatsApp(cart)}>
                 <Zap size={15} />
                 Complete on WhatsApp
               </a>
@@ -773,7 +801,11 @@ export default function ProductsPage() {
       localStorage.setItem("emmy_referral_code", referralCode);
     }
 
-    registerVisitor(referralCode);
+    void registerVisitor(referralCode).then((visitorId) => {
+      if (!visitorId) return;
+      void trackWebsiteVisited();
+      void trackPageViewed();
+    });
   }, []);
 
   const fetchProducts = useCallback(async (append = false) => {
@@ -858,7 +890,11 @@ export default function ProductsPage() {
   const updateQuantity = useCallback(
     (id: string, qty: number) => {
       if (qty <= 0) {
-        setCart((prev) => prev.filter((item) => item.id !== id));
+        setCart((prev) => {
+          const removed = prev.find((item) => item.id === id);
+          if (removed) void trackRemoveFromCart(removed.id, removed.quantity);
+          return prev.filter((item) => item.id !== id);
+        });
         return;
       }
 
@@ -873,16 +909,21 @@ export default function ProductsPage() {
   );
 
   const removeFromCart = useCallback((id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev) => {
+      const removed = prev.find((item) => item.id === id);
+      if (removed) void trackRemoveFromCart(removed.id, removed.quantity);
+      return prev.filter((item) => item.id !== id);
+    });
   }, []);
 
-  const openQuickView = useCallback(async (product: Product) => {
+  const openProductModal = useCallback(async (product: Product, eventType: "view" | "quick_view") => {
     const galleryRequestId = ++galleryRequestSequence.current;
     setQuickViewProduct(product);
     setShowQuickView(true);
     setQuickViewGallery([product.image].filter(Boolean));
     setGalleryError(null);
-    trackProductView(product.id);
+    if (eventType === "view") void trackProductView(product.id);
+    else void trackProductQuickView(product.id);
 
     const cached = galleryCache.current.get(product.id);
     if (cached) {
@@ -922,6 +963,31 @@ export default function ProductsPage() {
     setQuickViewGallery(entry.images);
     setQuickViewProduct({ ...product, description: entry.description });
     setGalleryLoading(false);
+  }, []);
+
+  const openProductView = useCallback(
+    (product: Product) => void openProductModal(product, "view"),
+    [openProductModal],
+  );
+
+  const openQuickView = useCallback(
+    (product: Product) => void openProductModal(product, "quick_view"),
+    [openProductModal],
+  );
+
+  const shareProduct = useCallback(async (product: Product) => {
+    const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: product.name, url });
+      else await navigator.clipboard.writeText(url);
+      void trackProductShared(product.id);
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") console.warn("Product sharing failed.", error);
+    }
+  }, []);
+
+  const trackCartWhatsApp = useCallback((items: CartItem[]) => {
+    items.forEach((item) => void trackWhatsAppPurchaseClicked(item.id, item.quantity));
   }, []);
 
   const closeQuickView = useCallback(() => {
@@ -1109,6 +1175,7 @@ export default function ProductsPage() {
                     key={product.id}
                     product={product}
                     onAddToCart={addToCart}
+                    onProductView={openProductView}
                     onQuickView={openQuickView}
                   />
                 ))}
@@ -1184,6 +1251,8 @@ export default function ProductsPage() {
         gallery={quickViewGallery}
         galleryLoading={galleryLoading}
         galleryError={galleryError}
+        onShare={shareProduct}
+        onWhatsApp={(product) => void trackWhatsAppPurchaseClicked(product.id, 1)}
       />
 
       <CartDrawer
@@ -1192,6 +1261,7 @@ export default function ProductsPage() {
         cart={cart}
         onUpdateQuantity={updateQuantity}
         onRemove={removeFromCart}
+        onWhatsApp={trackCartWhatsApp}
       />
     </main>
   );

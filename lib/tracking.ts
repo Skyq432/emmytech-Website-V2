@@ -7,66 +7,108 @@ const supabasePublishableKey =
 
 export const trackingSupabase = createClient(supabaseUrl, supabasePublishableKey);
 
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+const VISITOR_ID_KEY = 'emmy_visitor_id';
+let registration: { key: string; promise: Promise<string | null> } | null = null;
 
-export function getVisitorId() {
+export type WebsiteEventType =
+  | 'website_visited'
+  | 'page_viewed'
+  | 'product_viewed'
+  | 'product_quick_viewed'
+  | 'product_shared'
+  | 'add_to_cart'
+  | 'remove_from_cart'
+  | 'whatsapp_purchase_clicked'
+  | 'spin_opened_from_product'
+  | 'reward_viewed'
+  | 'reward_applied';
+
+export function getVisitorId(): string | null {
   if (typeof window === 'undefined') return null;
 
-  let visitorId = localStorage.getItem('emmy_visitor_id');
+  try {
+    const existing = window.localStorage.getItem(VISITOR_ID_KEY);
+    if (existing) return existing;
 
-  if (!visitorId) {
-    visitorId = generateUUID();
-    localStorage.setItem('emmy_visitor_id', visitorId);
+    const visitorId = window.crypto.randomUUID();
+    window.localStorage.setItem(VISITOR_ID_KEY, visitorId);
+    return visitorId;
+  } catch (error) {
+    console.warn('Visitor ID storage is unavailable; tracking was skipped.', error);
+    return null;
   }
-
-  return visitorId;
 }
 
-export async function registerVisitor(referralCode?: string | null) {
+export function registerVisitor(referralCode?: string | null): Promise<string | null> {
   const visitorId = getVisitorId();
-  if (!visitorId) return null;
+  if (!visitorId || typeof window === 'undefined') return Promise.resolve(null);
 
-  await trackingSupabase.rpc('register_visitor_session', {
-    p_visitor_id: visitorId,
-    p_referral_code: referralCode || null,
-    p_ip_address: null,
-    p_user_agent: navigator.userAgent,
-  });
+  const key = visitorId;
+  if (registration?.key === key) return registration.promise;
 
-  return visitorId;
+  const promise = (async () => {
+    try {
+      const { error } = await trackingSupabase.rpc('register_visitor_session', {
+        p_visitor_id: visitorId,
+        p_referral_code: referralCode || null,
+        p_ip_address: null,
+        p_user_agent: window.navigator.userAgent,
+      });
+      if (error) throw error;
+      return visitorId;
+    } catch (error) {
+      console.warn('Visitor registration failed; the website will continue normally.', error);
+      return null;
+    }
+  })();
+
+  registration = { key, promise };
+  return promise;
 }
 
-export async function trackProductView(productId: string) {
-  const visitorId = getVisitorId();
-  if (!visitorId) return;
+export async function trackWebsiteEvent(
+  eventType: WebsiteEventType,
+  options: { productId?: string | null; quantity?: number; sourcePage?: string } = {},
+): Promise<void> {
+  if (typeof window === 'undefined') return;
 
-  await trackingSupabase.rpc('track_product_event', {
-    p_visitor_id: visitorId,
-    p_product_id: productId,
-    p_event_type: 'view',
-    p_quantity: 1,
-    p_source_page: window.location.pathname,
-  });
+  try {
+    const visitorId = await registerVisitor();
+    if (!visitorId) return;
+
+    const { error } = await trackingSupabase.rpc('track_product_event', {
+      p_visitor_id: visitorId,
+      p_product_id: options.productId || null,
+      p_event_type: eventType,
+      p_quantity: Math.max(1, options.quantity ?? 1),
+      p_source_page: options.sourcePage ?? window.location.pathname,
+    });
+    if (error) throw error;
+  } catch (error) {
+    console.warn(`Tracking event "${eventType}" failed; the website will continue normally.`, error);
+  }
 }
 
-export async function trackAddToCart(productId: string, quantity = 1) {
-  const visitorId = getVisitorId();
-  if (!visitorId) return;
+export const trackWebsiteVisited = () => trackWebsiteEvent('website_visited');
+export const trackPageViewed = () => trackWebsiteEvent('page_viewed');
+export const trackProductView = (productId: string) =>
+  trackWebsiteEvent('product_viewed', { productId });
+export const trackProductQuickView = (productId: string) =>
+  trackWebsiteEvent('product_quick_viewed', { productId });
+export const trackProductShared = (productId: string) =>
+  trackWebsiteEvent('product_shared', { productId });
+export const trackAddToCart = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('add_to_cart', { productId, quantity });
+export const trackRemoveFromCart = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('remove_from_cart', { productId, quantity });
+export const trackWhatsAppPurchaseClicked = (productId: string, quantity = 1) =>
+  trackWebsiteEvent('whatsapp_purchase_clicked', { productId, quantity });
 
-  await trackingSupabase.rpc('track_product_event', {
-    p_visitor_id: visitorId,
-    p_product_id: productId,
-    p_event_type: 'add_to_cart',
-    p_quantity: quantity,
-    p_source_page: window.location.pathname,
-  });
-}
+// Prepared for future UI integrations. These do not emit until explicitly called.
+export const trackSpinOpenedFromProduct = (productId: string) =>
+  trackWebsiteEvent('spin_opened_from_product', { productId });
+export const trackRewardViewed = () => trackWebsiteEvent('reward_viewed');
+export const trackRewardApplied = () => trackWebsiteEvent('reward_applied');
 
 export async function createQuoteLead({
   productId,
@@ -91,10 +133,9 @@ export async function createQuoteLead({
     p_phone: phone,
     p_email: email || null,
     p_notes: notes || null,
-    p_source_page: window.location.pathname,
+    p_source_page: typeof window === 'undefined' ? null : window.location.pathname,
   });
 
   if (error) throw error;
-
   return data;
 }
