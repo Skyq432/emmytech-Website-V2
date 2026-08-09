@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
-  Package,
+  Sparkles,
   WalletCards,
   X,
 } from "lucide-react";
@@ -31,22 +33,13 @@ interface CashOffRecommendationsProps {
   onDismiss: () => void;
 }
 
-const money = (
-  value: number,
-) =>
-  new Intl.NumberFormat(
-    "en-NG",
-    {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    Number.isFinite(value)
-      ? value
-      : 0,
-  );
+const money = (value: number) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
 
 export default function CashOffRecommendations({
   eyebrow,
@@ -57,139 +50,239 @@ export default function CashOffRecommendations({
   onProductClick,
   onDismiss,
 }: CashOffRecommendationsProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const validProducts = useMemo(
+    () => products.filter(Boolean).slice(0, 2),
+    [products],
+  );
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [validProducts.length]);
+
+  useEffect(() => {
+    if (validProducts.length === 0) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onDismiss();
+      }
+
+      if (event.key === "ArrowRight") {
+        setCurrentIndex((previous) =>
+          (previous + 1) % validProducts.length,
+        );
+      }
+
+      if (event.key === "ArrowLeft") {
+        setCurrentIndex((previous) =>
+          (previous - 1 + validProducts.length) %
+          validProducts.length,
+        );
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onDismiss, validProducts.length]);
 
   if (
-    products.length !== 2 ||
+    validProducts.length === 0 ||
     cashOffAmount <= 0
   ) {
     return null;
   }
 
+  const product =
+    validProducts[
+      currentIndex
+    ] as CashOffRecommendationProduct;
+
+  const helperText =
+    currentIndex === 0
+      ? "One of the best products you can use your Cash-Off on right now."
+      : "Another solid option to explore while your Cash-Off is still available.";
+
+  const productLabel =
+    product.subcategory ||
+    product.category ||
+    "EmmyTech product";
+
   return (
-    <section
-      className="cashoff-recommendations"
-      aria-labelledby="cashoff-recommendations-title"
+    <div
+      className="cashoff-recommendation-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cashoff-recommendation-title"
     >
-      <div className="cashoff-recommendations-heading">
-        <div>
-          <span className="cashoff-recommendations-eyebrow">
+      <div className="cashoff-recommendation-modal">
+        <button
+          type="button"
+          className="cashoff-recommendation-close"
+          onClick={onDismiss}
+          aria-label="Close recommendations"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="cashoff-recommendation-modal-topline" />
+
+        <div className="cashoff-recommendation-branding">
+          <div className="cashoff-recommendation-branding-logo">
+            <Image
+              src="/images/emmy-logo-blue-text.png"
+              alt="EmmyTech"
+              fill
+              sizes="160px"
+              className="cashoff-recommendation-branding-logo-img"
+            />
+          </div>
+
+          <div className="cashoff-recommendation-balance-pill">
+            <small>Cash-Off available</small>
+            <strong>{money(cashOffAmount)}</strong>
+          </div>
+        </div>
+
+        <div className="cashoff-recommendation-copy">
+          <span className="cashoff-recommendation-eyebrow">
             <WalletCards size={14} />
             {eyebrow}
           </span>
 
-          <h2 id="cashoff-recommendations-title">
-            {headline}
+          <h2 id="cashoff-recommendation-title">
+            {headline || "Two products worth a look"}
           </h2>
 
           <p>
-            {bodyText}
+            {bodyText ||
+              "Here are a few great options you can use your Cash-Off on today."}
           </p>
         </div>
 
-        <div className="cashoff-recommendations-balance">
-          <small>Saved for you</small>
-          <strong>
-            {money(cashOffAmount)}
-          </strong>
-        </div>
+        <div className="cashoff-recommendation-slider-shell">
+          <div className="cashoff-recommendation-slide-card">
+            <div className="cashoff-recommendation-image-panel">
+              {product.image ? (
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 640px) 70vw, 320px"
+                  className="cashoff-recommendation-image"
+                />
+              ) : (
+                <div className="cashoff-recommendation-image-placeholder">
+                  <Sparkles size={30} />
+                </div>
+              )}
 
-        <button
-          type="button"
-          className="cashoff-recommendations-close"
-          onClick={onDismiss}
-          aria-label="Hide recommendations"
-        >
-          <X size={17} />
-        </button>
-      </div>
+              <span className="cashoff-recommendation-slide-number">
+                0{currentIndex + 1}
+              </span>
+            </div>
 
-      <div className="cashoff-recommendations-grid">
-        {products.map(
-          (
-            product,
-            index,
-          ) => (
-            <article
-              key={product.id}
-              className="cashoff-recommendation-card"
-            >
+            <div className="cashoff-recommendation-content-panel">
+              <small>{productLabel}</small>
+
+              <h3>{product.name}</h3>
+
+              <p className="cashoff-recommendation-helper">
+                {helperText}
+              </p>
+
+              <div className="cashoff-recommendation-price-row">
+                <strong>{money(product.price)}</strong>
+
+                {product.original_price &&
+                product.original_price >
+                  product.price ? (
+                  <span>
+                    {money(product.original_price)}
+                  </span>
+                ) : null}
+              </div>
+
               <button
                 type="button"
-                className="cashoff-recommendation-image"
+                className="cashoff-recommendation-primary"
                 onClick={() =>
-                  onProductClick(
-                    product,
-                  )
+                  onProductClick(product)
                 }
-                aria-label={`View ${product.name}`}
               >
-                {product.image ? (
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 720px) 42vw, 220px"
-                    className="cashoff-recommendation-img"
-                  />
-                ) : (
-                  <span className="cashoff-recommendation-placeholder">
-                    <Package size={28} />
-                  </span>
-                )}
-
-                <span className="cashoff-recommendation-number">
-                  0{index + 1}
-                </span>
+                View product
+                <ArrowRight size={16} />
               </button>
+            </div>
+          </div>
 
-              <div className="cashoff-recommendation-copy">
-                <small>
-                  {product.subcategory ||
-                    product.category}
-                </small>
+          <div className="cashoff-recommendation-controls">
+            <button
+              type="button"
+              className="cashoff-recommendation-nav"
+              onClick={() =>
+                setCurrentIndex((previous) =>
+                  (previous - 1 + validProducts.length) %
+                  validProducts.length,
+                )
+              }
+              aria-label="Previous recommendation"
+              disabled={validProducts.length < 2}
+            >
+              <ArrowLeft size={16} />
+            </button>
 
-                <h3>
-                  {product.name}
-                </h3>
-
-                <div className="cashoff-recommendation-price">
-                  <strong>
-                    {money(product.price)}
-                  </strong>
-
-                  {product.original_price &&
-                    product.original_price >
-                      product.price ? (
-                    <span>
-                      {money(
-                        product.original_price,
-                      )}
-                    </span>
-                  ) : null}
-                </div>
-
+            <div className="cashoff-recommendation-dots">
+              {validProducts.map((item, index) => (
                 <button
+                  key={item.id}
                   type="button"
-                  className="cashoff-recommendation-view"
-                  onClick={() =>
-                    onProductClick(
-                      product,
-                    )
+                  className={
+                    index === currentIndex
+                      ? "cashoff-recommendation-dot active"
+                      : "cashoff-recommendation-dot"
                   }
-                >
-                  View product
-                  <ArrowRight size={15} />
-                </button>
-              </div>
-            </article>
-          ),
-        )}
-      </div>
+                  onClick={() =>
+                    setCurrentIndex(index)
+                  }
+                  aria-label={`Show recommendation ${index + 1}`}
+                />
+              ))}
+            </div>
 
-      <p className="cashoff-recommendations-note">
-        Your Cash-Off remains saved while you browse.
-        Final product eligibility is confirmed when you order.
-      </p>
-    </section>
+            <button
+              type="button"
+              className="cashoff-recommendation-nav"
+              onClick={() =>
+                setCurrentIndex((previous) =>
+                  (previous + 1) %
+                  validProducts.length,
+                )
+              }
+              aria-label="Next recommendation"
+              disabled={validProducts.length < 2}
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <p className="cashoff-recommendation-footnote">
+          Your Cash-Off stays available while you browse.
+        </p>
+      </div>
+    </div>
   );
 }
