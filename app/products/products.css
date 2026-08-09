@@ -4344,389 +4344,252 @@
 
 /* ==========================================================
    CASH-OFF RECOMMENDATIONS
-   Premium recommendation modal for SMS return customers.
+   Compact stacked-card modal for SMS return customers.
    ========================================================== */
 
-.products-page .cashoff-recommendation-modal-backdrop {
+.products-page .cashoff-stack-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1300;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: rgba(14, 22, 52, 0.48);
-  backdrop-filter: blur(12px);
+  padding: 18px;
+  background: rgba(14, 22, 52, 0.42);
+  backdrop-filter: blur(10px);
 }
 
-.products-page .cashoff-recommendation-modal {
+.products-page .cashoff-stack-modal {
   position: relative;
-  width: min(780px, 100%);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(255, 177, 0, 0.13), transparent 32%),
-    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
-  box-shadow: 0 24px 70px rgba(8, 18, 52, 0.28);
+  width: min(390px, 100%);
+  padding: 18px 0 10px;
 }
 
-.products-page .cashoff-recommendation-modal-topline {
-  height: 4px;
-  background: linear-gradient(90deg, #032489 0%, #214fbe 62%, #ffb100 100%);
-}
-
-.products-page .cashoff-recommendation-close {
+.products-page .cashoff-stack-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 4;
+  top: -4px;
+  right: 0;
+  z-index: 6;
   display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1px solid #dfe6f1;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  color: #6f778a;
+  border: 1px solid rgba(214, 220, 233, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #6d7486;
   cursor: pointer;
-  transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 14px 30px rgba(7, 18, 49, 0.14);
 }
 
-.products-page .cashoff-recommendation-close:hover {
-  transform: scale(1.03);
-  color: #032489;
-  border-color: rgba(3, 36, 137, 0.28);
-}
-
-.products-page .cashoff-recommendation-branding {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 24px 26px 8px;
-}
-
-.products-page .cashoff-recommendation-branding-logo {
+.products-page .cashoff-stack-deck {
   position: relative;
-  width: 146px;
-  height: 42px;
+  min-height: 500px;
 }
 
-.products-page .cashoff-recommendation-branding-logo-img {
-  object-fit: contain;
-  object-position: left center;
-}
-
-.products-page .cashoff-recommendation-balance-pill {
-  min-width: 154px;
-  padding: 11px 16px;
-  border: 1px solid rgba(255, 177, 0, 0.34);
-  border-radius: 16px;
-  background: #fff7e7;
-  text-align: right;
-}
-
-.products-page .cashoff-recommendation-balance-pill small {
-  display: block;
-  color: #846012;
-  font-size: 0.58rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.products-page .cashoff-recommendation-balance-pill strong {
-  display: block;
-  margin-top: 4px;
-  color: #032489;
-  font-size: 1.15rem;
-  font-weight: 950;
-}
-
-.products-page .cashoff-recommendation-copy {
-  padding: 2px 26px 20px;
-}
-
-.products-page .cashoff-recommendation-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #032489;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.products-page .cashoff-recommendation-copy h2 {
-  margin: 10px 0 8px;
-  color: #121b3b;
-  font-size: clamp(1.8rem, 3.4vw, 2.65rem);
-  line-height: 1.04;
-  letter-spacing: -0.045em;
-}
-
-.products-page .cashoff-recommendation-copy p {
-  max-width: 560px;
-  margin: 0;
-  color: #697287;
-  font-size: 0.98rem;
-  line-height: 1.6;
-}
-
-.products-page .cashoff-recommendation-slider-shell {
-  padding: 0 26px 26px;
-}
-
-.products-page .cashoff-recommendation-slide-card {
-  display: grid;
-  grid-template-columns: minmax(260px, 43%) minmax(0, 1fr);
+.products-page .cashoff-stack-card {
+  position: absolute;
   overflow: hidden;
-  border: 1px solid #e4e9f2;
-  border-radius: 28px;
-  background: #ffffff;
-  box-shadow: 0 14px 38px rgba(8, 28, 86, 0.08);
+  border: 0;
+  border-radius: 30px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, opacity 0.28s ease;
 }
 
-.products-page .cashoff-recommendation-image-panel {
+.products-page .cashoff-stack-card.is-front {
+  inset: 32px 42px 0 0;
+  z-index: 3;
+  background: linear-gradient(180deg, #fcfcfe 0%, #181818 62%, #111111 100%);
+  box-shadow: 0 26px 60px rgba(8, 18, 52, 0.28);
+}
+
+.products-page .cashoff-stack-card.is-front:hover {
+  transform: translateY(-2px);
+}
+
+.products-page .cashoff-stack-card.is-back {
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 438px;
+  z-index: 1;
+  opacity: 0.92;
+  background: linear-gradient(180deg, #ffffff 0%, #1b1b1b 64%, #121212 100%);
+  box-shadow: 0 18px 42px rgba(8, 18, 52, 0.12);
+  transform: scale(0.94);
+}
+
+.products-page .cashoff-stack-image-shell {
   position: relative;
-  min-height: 360px;
-  background:
-    linear-gradient(180deg, #f8f9fd 0%, #eef2f8 100%);
+  height: 250px;
+  margin: 14px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #f4f5f8;
 }
 
-.products-page .cashoff-recommendation-image {
+.products-page .cashoff-stack-image {
   object-fit: cover;
 }
 
-.products-page .cashoff-recommendation-image-placeholder {
+.products-page .cashoff-stack-image-placeholder {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  color: #a2abbd;
+  color: #a6aebf;
 }
 
-.products-page .cashoff-recommendation-slide-number {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 2;
-  padding: 7px 10px;
-  border-radius: 11px;
-  background: rgba(17, 52, 157, 0.92);
+.products-page .cashoff-stack-content {
+  padding: 2px 18px 20px;
+}
+
+.products-page .cashoff-stack-microcopy {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.products-page .cashoff-stack-name {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
   color: #ffffff;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 1.95rem;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.products-page .cashoff-recommendation-content-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 28px 28px 24px;
-}
-
-.products-page .cashoff-recommendation-content-panel > small {
-  color: #7a8296;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.products-page .cashoff-recommendation-content-panel h3 {
-  margin: 8px 0 10px;
-  color: #121b3b;
-  font-size: 1.72rem;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-}
-
-.products-page .cashoff-recommendation-helper {
-  margin: 0 0 16px;
-  color: #667085;
-  font-size: 0.94rem;
-  line-height: 1.65;
-}
-
-.products-page .cashoff-recommendation-price-row {
+.products-page .cashoff-stack-price-row {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: auto;
+  margin-top: 16px;
 }
 
-.products-page .cashoff-recommendation-price-row strong {
-  color: #032489;
-  font-size: 2rem;
-  font-weight: 950;
-  letter-spacing: -0.03em;
+.products-page .cashoff-stack-price-row strong {
+  color: #ffffff;
+  font-size: 2.25rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
 }
 
-.products-page .cashoff-recommendation-price-row span {
-  color: #a4acb9;
+.products-page .cashoff-stack-price-row span {
+  color: rgba(255, 255, 255, 0.55);
   font-size: 0.95rem;
   text-decoration: line-through;
 }
 
-.products-page .cashoff-recommendation-primary {
-  display: inline-flex;
+.products-page .cashoff-stack-action-row {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 9px;
-  width: 100%;
-  min-height: 52px;
-  margin-top: 18px;
-  padding: 0 20px;
-  border: 0;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.products-page .cashoff-stack-chip {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.products-page .cashoff-stack-arrow {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #ffb100 0%, #f3a700 100%);
-  color: #111e4d;
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 12px 28px rgba(255, 177, 0, 0.26);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: #ffffff;
+  color: #111111;
+  flex-shrink: 0;
 }
 
-.products-page .cashoff-recommendation-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 34px rgba(255, 177, 0, 0.34);
-}
-
-.products-page .cashoff-recommendation-controls {
+.products-page .cashoff-stack-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin-top: 18px;
+  padding-top: 14px;
 }
 
-.products-page .cashoff-recommendation-nav {
+.products-page .cashoff-stack-nav {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid #dfe6f1;
-  border-radius: 50%;
-  background: #ffffff;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(214, 220, 233, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
   color: #032489;
   cursor: pointer;
 }
 
-.products-page .cashoff-recommendation-nav:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.products-page .cashoff-recommendation-dots {
+.products-page .cashoff-stack-dots {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.products-page .cashoff-recommendation-dot {
-  width: 9px;
-  height: 9px;
+.products-page .cashoff-stack-dot {
+  width: 8px;
+  height: 8px;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #cad3e2;
+  background: rgba(255, 255, 255, 0.46);
   cursor: pointer;
 }
 
-.products-page .cashoff-recommendation-dot.active {
-  width: 28px;
+.products-page .cashoff-stack-dot.active {
+  width: 24px;
   background: #032489;
 }
 
-.products-page .cashoff-recommendation-footnote {
-  margin: 0;
-  padding: 0 26px 24px;
-  color: #8b93a5;
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-
-@media (max-width: 780px) {
-  .products-page .cashoff-recommendation-modal-backdrop {
-    padding: 16px;
-  }
-
-  .products-page .cashoff-recommendation-branding {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-right: 72px;
-  }
-
-  .products-page .cashoff-recommendation-slider-shell {
-    padding: 0 18px 20px;
-  }
-
-  .products-page .cashoff-recommendation-copy {
-    padding: 4px 18px 16px;
-  }
-
-  .products-page .cashoff-recommendation-slide-card {
-    grid-template-columns: 1fr;
-  }
-
-  .products-page .cashoff-recommendation-image-panel {
-    min-height: 260px;
-  }
-
-  .products-page .cashoff-recommendation-content-panel {
-    padding: 20px 18px 18px;
-  }
-
-  .products-page .cashoff-recommendation-content-panel h3 {
-    font-size: 1.34rem;
-  }
-
-  .products-page .cashoff-recommendation-price-row strong {
-    font-size: 1.6rem;
-  }
-
-  .products-page .cashoff-recommendation-footnote {
-    padding: 0 18px 20px;
-  }
-}
-
 @media (max-width: 480px) {
-  .products-page .cashoff-recommendation-modal {
-    border-radius: 24px;
+  .products-page .cashoff-stack-modal {
+    width: min(340px, 100%);
   }
 
-  .products-page .cashoff-recommendation-branding-logo {
-    width: 130px;
-    height: 38px;
+  .products-page .cashoff-stack-deck {
+    min-height: 444px;
   }
 
-  .products-page .cashoff-recommendation-balance-pill {
-    min-width: 0;
-    text-align: left;
+  .products-page .cashoff-stack-card.is-front {
+    inset: 24px 28px 0 0;
+    border-radius: 26px;
   }
 
-  .products-page .cashoff-recommendation-copy h2 {
-    font-size: 1.62rem;
+  .products-page .cashoff-stack-card.is-back {
+    width: 260px;
+    height: 392px;
+    border-radius: 26px;
   }
 
-  .products-page .cashoff-recommendation-copy p,
-  .products-page .cashoff-recommendation-helper {
-    font-size: 0.9rem;
+  .products-page .cashoff-stack-image-shell {
+    height: 210px;
+    margin: 12px;
+    border-radius: 20px;
   }
 
-  .products-page .cashoff-recommendation-image-panel {
-    min-height: 220px;
+  .products-page .cashoff-stack-content {
+    padding: 2px 16px 18px;
   }
 
-  .products-page .cashoff-recommendation-primary {
-    min-height: 48px;
-    font-size: 0.9rem;
+  .products-page .cashoff-stack-name {
+    font-size: 1.55rem;
+  }
+
+  .products-page .cashoff-stack-price-row strong {
+    font-size: 1.9rem;
+  }
+
+  .products-page .cashoff-stack-chip {
+    font-size: 0.74rem;
   }
 }
