@@ -1769,6 +1769,75 @@ export default function ProductsPage() {
       (
         product: Product,
       ) => {
+        if (
+          product.stock === 0
+        ) {
+          return;
+        }
+
+        const existing =
+          cart.find(
+            (
+              item,
+            ) =>
+              item.id ===
+              product.id,
+          );
+
+        if (
+          existing &&
+          existing.quantity >=
+            product.stock
+        ) {
+          return;
+        }
+
+        setCart(
+          (
+            current,
+          ) => {
+            const currentItem =
+              current.find(
+                (
+                  item,
+                ) =>
+                  item.id ===
+                  product.id,
+              );
+
+            if (currentItem) {
+              return current.map(
+                (
+                  item,
+                ) =>
+                  item.id ===
+                  product.id
+                    ? {
+                        ...item,
+                        quantity:
+                          item.quantity +
+                          1,
+                      }
+                    : item,
+              );
+            }
+
+            return [
+              ...current,
+              {
+                ...product,
+                quantity:
+                  1,
+              },
+            ];
+          },
+        );
+
+        void trackAddToCart(
+          product.id,
+          1,
+        );
+
         void trackWebsiteEvent(
           "recommendation_clicked",
           {
@@ -1779,6 +1848,9 @@ export default function ProductsPage() {
               placement:
                 "products_top",
 
+              action:
+                "added_to_cart",
+
               cash_off_balance:
                 Number(
                   wheelState
@@ -1788,14 +1860,9 @@ export default function ProductsPage() {
             },
           },
         );
-
-        void openProductModal(
-          product,
-          "view",
-        );
       },
       [
-        openProductModal,
+        cart,
         wheelState
           ?.cash_off_balance,
       ],
@@ -2546,6 +2613,16 @@ export default function ProductsPage() {
                   product as Product,
                 )
               }
+              onComplete={() => {
+                window.sessionStorage.setItem(
+                  RECOMMENDATION_DISMISSED_KEY,
+                  "1",
+                );
+
+                setRecommendationDismissed(
+                  true,
+                );
+              }}
               onDismiss={() => {
                 window.sessionStorage.setItem(
                   RECOMMENDATION_DISMISSED_KEY,

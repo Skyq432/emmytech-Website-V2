@@ -4344,9 +4344,7 @@
 
 /* ==========================================================
    CASH-OFF RECOMMENDATIONS
-   Compact stacked-card modal for SMS return customers.
-   EmmyTech navy + gold theme. Cards animate into place on
-   swap instead of swapping their text instantly.
+   Compact stacked cards with 3D depth and fly-to-cart.
    ========================================================== */
 
 .products-page .cashoff-stack-modal-backdrop {
@@ -4364,52 +4362,63 @@
 .products-page .cashoff-stack-modal {
   position: relative;
   width: min(390px, 100%);
-  padding: 18px 0 10px;
+  padding: 18px 0 6px;
 }
 
 .products-page .cashoff-stack-close {
   position: absolute;
   top: -4px;
   right: 0;
-  z-index: 6;
+  z-index: 8;
   display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(214, 220, 233, 0.95);
+  border: 1px solid rgba(214, 220, 233, 0.96);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.97);
   color: #6d7486;
   cursor: pointer;
-  box-shadow: 0 14px 30px rgba(7, 18, 49, 0.14);
-  transition: color 0.2s ease, border-color 0.2s ease;
+  box-shadow:
+    0 12px 28px rgba(7, 18, 49, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.products-page .cashoff-stack-close:hover {
-  color: #0F1B5E;
-  border-color: #0F1B5E;
+.products-page .cashoff-stack-close:hover:not(:disabled) {
+  color: #0f1b5e;
+  border-color: #0f1b5e;
+  transform: translateY(-1px);
 }
 
 .products-page .cashoff-stack-deck {
   position: relative;
   min-height: 500px;
+  perspective: 1100px;
 }
 
 .products-page .cashoff-stack-card {
   position: absolute;
   overflow: hidden;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  outline: 1px solid rgba(245, 168, 0, 0.22);
+  outline-offset: -2px;
   border-radius: 30px;
   text-align: left;
   cursor: pointer;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
   transition:
-    top 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    right 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.32s ease,
-    opacity 0.32s ease,
-    box-shadow 0.32s ease;
+    top 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    right 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    box-shadow 0.38s ease;
 }
 
 .products-page .cashoff-stack-card.is-front {
@@ -4417,12 +4426,32 @@
   right: 42px;
   width: calc(100% - 42px);
   height: 468px;
-  background: linear-gradient(165deg, #16225c 0%, #0F1B5E 55%, #0A1345 100%);
-  box-shadow: 0 26px 60px rgba(8, 18, 52, 0.32);
+  background: linear-gradient(
+    165deg,
+    #16225c 0%,
+    #0f1b5e 56%,
+    #09123e 100%
+  );
+  box-shadow:
+    0 34px 70px rgba(5, 12, 39, 0.38),
+    0 14px 30px rgba(15, 27, 94, 0.34),
+    0 2px 2px rgba(255, 255, 255, 0.16) inset,
+    0 -2px 4px rgba(0, 0, 0, 0.18) inset;
+  transform:
+    rotateX(0.5deg)
+    rotateY(-1.2deg)
+    translateZ(18px);
 }
 
-.products-page .cashoff-stack-card.is-front:hover {
-  transform: translateY(-3px);
+.products-page .cashoff-stack-card.is-front:hover:not(:disabled) {
+  transform:
+    rotateY(-0.5deg)
+    translateZ(28px)
+    translateY(-3px);
+  box-shadow:
+    0 44px 84px rgba(5, 12, 39, 0.42),
+    0 18px 34px rgba(15, 27, 94, 0.36),
+    0 2px 2px rgba(255, 255, 255, 0.18) inset;
 }
 
 .products-page .cashoff-stack-card.is-back {
@@ -4430,14 +4459,33 @@
   right: 0;
   width: 300px;
   height: 438px;
-  opacity: 0.9;
-  transform: scale(0.96);
-  background: linear-gradient(165deg, #1c2a68 0%, #10195c 60%, #0A1345 100%);
-  box-shadow: 0 18px 42px rgba(8, 18, 52, 0.2);
+  opacity: 0.94;
+  background: linear-gradient(
+    165deg,
+    #213075 0%,
+    #121e61 60%,
+    #0a1345 100%
+  );
+  box-shadow:
+    0 22px 48px rgba(5, 12, 39, 0.3),
+    0 7px 18px rgba(15, 27, 94, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform:
+    scale(0.96)
+    rotateY(2deg)
+    translateZ(-10px);
 }
 
-.products-page .cashoff-stack-card.is-back:hover {
+.products-page .cashoff-stack-card.is-back:hover:not(:disabled) {
   opacity: 1;
+  transform:
+    scale(0.975)
+    rotateY(1deg)
+    translateZ(-4px);
+}
+
+.products-page .cashoff-stack-card.is-sending {
+  pointer-events: none;
 }
 
 .products-page .cashoff-stack-image-shell {
@@ -4445,8 +4493,17 @@
   height: 300px;
   margin: 12px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.84);
   border-radius: 24px;
-  background: #EFF1F8;
+  background: linear-gradient(
+    180deg,
+    #f9faff 0%,
+    #edf0f7 100%
+  );
+  box-shadow:
+    0 12px 24px rgba(5, 12, 39, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(40, 53, 95, 0.08);
 }
 
 .products-page .cashoff-stack-image {
@@ -4459,30 +4516,18 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #9AA4C7;
+  color: #98a3c5;
 }
 
 .products-page .cashoff-stack-content {
   padding: 0 18px 14px;
-  animation: cashoff-content-in 0.34s ease 0.1s both;
-}
-
-@keyframes cashoff-content-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .products-page .cashoff-stack-microcopy {
   margin: 0 0 6px;
-  color: #C9D1F5;
+  color: #ccd4f5;
   font-size: 0.7rem;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .products-page .cashoff-stack-name {
@@ -4490,16 +4535,16 @@
   margin: 0;
   overflow: hidden;
   color: #ffffff;
-  font-size: 1.55rem;
+  font-size: 1.5rem;
   line-height: 1.05;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
 .products-page .cashoff-stack-price-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 9px;
@@ -4507,63 +4552,29 @@
 
 .products-page .cashoff-stack-price-row strong {
   color: #ffffff;
-  font-size: 1.9rem;
+  font-size: 1.88rem;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.045em;
 }
 
-.products-page .cashoff-stack-price-row span {
-  color: rgba(255, 255, 255, 0.5);
+.products-page .cashoff-stack-price-row > span:not(.cashoff-stack-cart-icon) {
+  color: rgba(255, 255, 255, 0.48);
   font-size: 0.78rem;
   text-decoration: line-through;
 }
 
-.products-page .cashoff-stack-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding-top: 14px;
-}
-
-.products-page .cashoff-stack-nav {
+.products-page .cashoff-stack-cart-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(214, 220, 233, 0.95);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #0F1B5E;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.products-page .cashoff-stack-nav:hover {
-  background: #F5A800;
-  color: #0A1345;
-}
-
-.products-page .cashoff-stack-dots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.products-page .cashoff-stack-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.46);
-  cursor: pointer;
-  transition: width 0.2s ease, background 0.2s ease;
-}
-
-.products-page .cashoff-stack-dot.active {
-  width: 24px;
-  background: #F5A800;
+  width: 42px;
+  height: 42px;
+  margin-left: auto;
+  border-radius: 14px;
+  background: #f5a800;
+  color: #0a1345;
+  box-shadow:
+    0 8px 18px rgba(245, 168, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
 }
 
 @media (max-width: 480px) {
@@ -4600,14 +4611,16 @@
   }
 
   .products-page .cashoff-stack-name {
-    font-size: 1.32rem;
+    font-size: 1.3rem;
   }
 
   .products-page .cashoff-stack-price-row strong {
     font-size: 1.65rem;
   }
 
-  .products-page .cashoff-stack-chip {
-    font-size: 0.74rem;
+  .products-page .cashoff-stack-cart-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
   }
 }

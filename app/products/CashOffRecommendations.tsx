@@ -1,8 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  ShoppingCart,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 export interface CashOffRecommendationProduct {
   id: string;
@@ -24,83 +32,390 @@ interface CashOffRecommendationsProps {
   onProductClick: (
     product: CashOffRecommendationProduct,
   ) => void;
+  onComplete: () => void;
   onDismiss: () => void;
 }
 
-const money = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
+const money = (
+  value: number,
+) =>
+  new Intl.NumberFormat(
+    "en-NG",
+    {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    },
+  ).format(
+    Number.isFinite(value)
+      ? value
+      : 0,
+  );
 
 export default function CashOffRecommendations({
   products,
   onProductClick,
+  onComplete,
   onDismiss,
 }: CashOffRecommendationsProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const validProducts = useMemo(
-    () => products.filter(Boolean).slice(0, 2),
-    [products],
+  const [
+    removedIds,
+    setRemovedIds,
+  ] = useState<Set<string>>(
+    () => new Set(),
   );
 
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [validProducts.length]);
+  const [
+    animatingId,
+    setAnimatingId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const validProducts =
+    useMemo(
+      () =>
+        products
+          .filter(Boolean)
+          .slice(0, 2),
+      [products],
+    );
+
+  const remainingProducts =
+    useMemo(
+      () =>
+        validProducts.filter(
+          (
+            product,
+          ) =>
+            !removedIds.has(
+              product.id,
+            ),
+        ),
+      [
+        removedIds,
+        validProducts,
+      ],
+    );
 
   useEffect(() => {
-    if (validProducts.length === 0) {
-      return;
-    }
+    const handleKeyDown =
+      (
+        event: KeyboardEvent,
+      ) => {
+        if (
+          event.key ===
+            "Escape" &&
+          !animatingId
+        ) {
+          onDismiss();
+        }
+      };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onDismiss();
-      }
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
 
-      if (event.key === "ArrowRight") {
-        setCurrentIndex((previous) =>
-          (previous + 1) % validProducts.length,
-        );
-      }
+    const previousOverflow =
+      document.body.style
+        .overflow;
 
-      if (event.key === "ArrowLeft") {
-        setCurrentIndex((previous) =>
-          (previous - 1 + validProducts.length) %
-          validProducts.length,
-        );
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onDismiss, validProducts.length]);
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
 
-  if (validProducts.length === 0) {
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, [
+    animatingId,
+    onDismiss,
+  ]);
+
+  if (
+    remainingProducts.length ===
+    0
+  ) {
     return null;
   }
 
-  const changeCard = (direction: "next" | "prev") => {
-    setCurrentIndex((previous) => {
-      if (direction === "next") {
-        return (previous + 1) % validProducts.length;
+  const flyProductToCart =
+    async (
+      product:
+        CashOffRecommendationProduct,
+      card:
+        HTMLButtonElement,
+    ) => {
+      if (animatingId) {
+        return;
       }
 
-      return (
-        (previous - 1 + validProducts.length) %
-        validProducts.length
+      setAnimatingId(
+        product.id,
       );
-    });
-  };
+
+      const imageShell =
+        card.querySelector(
+          ".cashoff-stack-image-shell",
+        ) as HTMLElement | null;
+
+      const cartButton =
+        document.querySelector(
+          ".cart-fab",
+        ) as HTMLElement | null;
+
+      const reduceMotion =
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+
+      if (
+        imageShell &&
+        cartButton &&
+        !reduceMotion
+      ) {
+        const sourceRect =
+          imageShell.getBoundingClientRect();
+
+        const targetRect =
+          cartButton.getBoundingClientRect();
+
+        const clone =
+          imageShell.cloneNode(
+            true,
+          ) as HTMLElement;
+
+        clone.setAttribute(
+          "aria-hidden",
+          "true",
+        );
+
+        Object.assign(
+          clone.style,
+          {
+            position:
+              "fixed",
+
+            left:
+              `${sourceRect.left}px`,
+
+            top:
+              `${sourceRect.top}px`,
+
+            width:
+              `${sourceRect.width}px`,
+
+            height:
+              `${sourceRect.height}px`,
+
+            margin:
+              "0",
+
+            zIndex:
+              "2600",
+
+            pointerEvents:
+              "none",
+
+            overflow:
+              "hidden",
+
+            background:
+              "#eff1f8",
+
+            border:
+              "1px solid rgba(255,255,255,.85)",
+
+            boxShadow:
+              "0 18px 42px rgba(8,18,52,.28)",
+
+            transformOrigin:
+              "center center",
+          },
+        );
+
+        document.body.appendChild(
+          clone,
+        );
+
+        const sourceCenterX =
+          sourceRect.left +
+          sourceRect.width / 2;
+
+        const sourceCenterY =
+          sourceRect.top +
+          sourceRect.height / 2;
+
+        const targetCenterX =
+          targetRect.left +
+          targetRect.width / 2;
+
+        const targetCenterY =
+          targetRect.top +
+          targetRect.height / 2;
+
+        const deltaX =
+          targetCenterX -
+          sourceCenterX;
+
+        const deltaY =
+          targetCenterY -
+          sourceCenterY;
+
+        const flight =
+          clone.animate(
+            [
+              {
+                transform:
+                  "translate3d(0,0,0) scale(1)",
+                borderRadius:
+                  "22px",
+                opacity:
+                  1,
+              },
+              {
+                transform:
+                  `translate3d(${deltaX * 0.42}px, ${deltaY * 0.38}px, 0) scale(.48)`,
+                borderRadius:
+                  "50%",
+                opacity:
+                  1,
+                offset:
+                  0.52,
+              },
+              {
+                transform:
+                  `translate3d(${deltaX}px, ${deltaY}px, 0) scale(.08)`,
+                borderRadius:
+                  "50%",
+                opacity:
+                  0.1,
+              },
+            ],
+            {
+              duration:
+                760,
+
+              easing:
+                "cubic-bezier(.2,.8,.2,1)",
+
+              fill:
+                "forwards",
+            },
+          );
+
+        card.animate(
+          [
+            {
+              transform:
+                "scale(1)",
+              opacity:
+                1,
+            },
+            {
+              transform:
+                "scale(.94)",
+              opacity:
+                0.16,
+            },
+          ],
+          {
+            duration:
+              540,
+
+            easing:
+              "ease",
+
+            fill:
+              "forwards",
+          },
+        );
+
+        await flight.finished
+          .catch(
+            () => undefined,
+          );
+
+        clone.remove();
+
+        cartButton.animate(
+          [
+            {
+              transform:
+                "scale(1)",
+            },
+            {
+              transform:
+                "scale(1.2)",
+            },
+            {
+              transform:
+                "scale(1)",
+            },
+          ],
+          {
+            duration:
+              360,
+
+            easing:
+              "cubic-bezier(.2,.8,.2,1)",
+          },
+        );
+      }
+
+      onProductClick(
+        product,
+      );
+
+      const wasLastCard =
+        remainingProducts.length ===
+        1;
+
+      if (wasLastCard) {
+        setAnimatingId(
+          null,
+        );
+
+        onComplete();
+
+        return;
+      }
+
+      setRemovedIds(
+        (
+          current,
+        ) => {
+          const next =
+            new Set(
+              current,
+            );
+
+          next.add(
+            product.id,
+          );
+
+          return next;
+        },
+      );
+
+      window.setTimeout(
+        () => {
+          setAnimatingId(
+            null,
+          );
+        },
+        reduceMotion
+          ? 0
+          : 130,
+      );
+    };
 
   return (
     <div
@@ -114,136 +429,135 @@ export default function CashOffRecommendations({
           type="button"
           className="cashoff-stack-close"
           onClick={onDismiss}
-          aria-label="Close recommendations"
+          disabled={
+            Boolean(
+              animatingId,
+            )
+          }
+          aria-label="Cancel recommendations"
         >
           <X size={18} />
         </button>
 
         <div className="cashoff-stack-deck">
-          {validProducts.map((product, index) => {
-            const offset =
-              (index - currentIndex + validProducts.length) %
-              validProducts.length;
-            const isFront = offset === 0;
+          {remainingProducts.map(
+            (
+              product,
+              index,
+            ) => {
+              const isFront =
+                index === 0;
 
-            return (
-              <button
-                key={product.id}
-                type="button"
-                className={`cashoff-stack-card ${
-                  isFront ? "is-front" : "is-back"
-                }`}
-                style={{
-                  zIndex: validProducts.length - offset,
-                }}
-                onClick={() =>
-                  isFront
-                    ? onProductClick(product)
-                    : setCurrentIndex(index)
-                }
-                aria-label={
-                  isFront ? undefined : `Show ${product.name}`
-                }
-                aria-labelledby={
-                  isFront ? "cashoff-stack-title" : undefined
-                }
-              >
-                <div className="cashoff-stack-image-shell">
-                  {product.image ? (
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes={isFront ? "300px" : "240px"}
-                      className="cashoff-stack-image"
-                    />
-                  ) : (
-                    <div className="cashoff-stack-image-placeholder">
-                      <Sparkles size={isFront ? 26 : 22} />
-                    </div>
-                  )}
-                </div>
+              const isAnimating =
+                animatingId ===
+                product.id;
 
-                {isFront ? (
-                  <div className="cashoff-stack-content">
-                    <p
-                      id="cashoff-stack-title"
-                      className="cashoff-stack-microcopy"
-                    >
-                      People are buying this with Cash-Off
-                    </p>
-
-                    <h3 className="cashoff-stack-name">
-                      {product.name}
-                    </h3>
-
-                    <div className="cashoff-stack-price-row">
-                      <strong>
-                        {money(product.price)}
-                      </strong>
-
-                      {product.original_price &&
-                      product.original_price >
-                        product.price ? (
-                        <span>
-                          {money(product.original_price)}
-                        </span>
-                      ) : null}
-                    </div>
-
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  className={`cashoff-stack-card ${
+                    isFront
+                      ? "is-front"
+                      : "is-back"
+                  } ${
+                    isAnimating
+                      ? "is-sending"
+                      : ""
+                  }`}
+                  disabled={
+                    Boolean(
+                      animatingId,
+                    )
+                  }
+                  style={{
+                    zIndex:
+                      remainingProducts.length -
+                      index,
+                  }}
+                  onClick={(
+                    event,
+                  ) =>
+                    void flyProductToCart(
+                      product,
+                      event.currentTarget,
+                    )
+                  }
+                  aria-label={`Add ${product.name} to cart`}
+                >
+                  <div className="cashoff-stack-image-shell">
+                    {product.image ? (
+                      <Image
+                        src={
+                          product.image
+                        }
+                        alt={
+                          product.name
+                        }
+                        fill
+                        sizes={
+                          isFront
+                            ? "330px"
+                            : "290px"
+                        }
+                        className="cashoff-stack-image"
+                      />
+                    ) : (
+                      <div className="cashoff-stack-image-placeholder">
+                        <Sparkles
+                          size={
+                            isFront
+                              ? 28
+                              : 22
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
-                ) : null}
-              </button>
-            );
-          })}
+
+                  {isFront ? (
+                    <div className="cashoff-stack-content">
+                      <p
+                        id="cashoff-stack-title"
+                        className="cashoff-stack-microcopy"
+                      >
+                        People are buying this with Cash-Off
+                      </p>
+
+                      <h3 className="cashoff-stack-name">
+                        {product.name}
+                      </h3>
+
+                      <div className="cashoff-stack-price-row">
+                        <strong>
+                          {money(
+                            product.price,
+                          )}
+                        </strong>
+
+                        {product.original_price &&
+                        product.original_price >
+                          product.price ? (
+                          <span>
+                            {money(
+                              product.original_price,
+                            )}
+                          </span>
+                        ) : null}
+
+                        <span className="cashoff-stack-cart-icon">
+                          <ShoppingCart
+                            size={18}
+                          />
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </button>
+              );
+            },
+          )}
         </div>
-
-        {validProducts.length > 1 ? (
-          <div className="cashoff-stack-controls">
-            <button
-              type="button"
-              className="cashoff-stack-nav"
-              onClick={() =>
-                changeCard("prev")
-              }
-              aria-label="Show previous recommendation"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            <div className="cashoff-stack-dots">
-              {validProducts.map(
-                (item, index) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={
-                      index ===
-                      currentIndex
-                        ? "cashoff-stack-dot active"
-                        : "cashoff-stack-dot"
-                    }
-                    onClick={() =>
-                      setCurrentIndex(index)
-                    }
-                    aria-label={`Show ${item.name}`}
-                  />
-                ),
-              )}
-            </div>
-
-            <button
-              type="button"
-              className="cashoff-stack-nav"
-              onClick={() =>
-                changeCard("next")
-              }
-              aria-label="Show next recommendation"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        ) : null}
       </div>
     </div>
   );
