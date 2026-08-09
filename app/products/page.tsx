@@ -8,6 +8,7 @@ import "./products.css";
 import "./cart-polish.css";
 import "./wheel-overlay-polish.css";
 import SpinSaveOverlay from "./SpinSaveOverlay";
+import CashOffWelcomeModal from "./CashOffWelcomeModal";
 import {
   ShoppingCart,
   Search,
@@ -174,6 +175,7 @@ interface SmsWelcomeState {
   firstName: string;
   cashOffBalance: number;
   spinsRemaining: number;
+  lastSpinDate: string | null;
 }
 
 interface WheelSpinResult {
@@ -945,9 +947,6 @@ export default function ProductsPage() {
   const [smsWelcome, setSmsWelcome] =
     useState<SmsWelcomeState | null>(null);
 
-  const [smsHandoffLoading, setSmsHandoffLoading] =
-    useState(false);
-
   const [wheelLoading, setWheelLoading] = useState(false);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelSpinResult, setWheelSpinResult] = useState<WheelSpinResult | null>(null);
@@ -1019,7 +1018,6 @@ export default function ProductsPage() {
         params.get("sms_handoff");
 
       if (smsHandoff) {
-        setSmsHandoffLoading(true);
         setSpinError(null);
 
         try {
@@ -1039,6 +1037,7 @@ export default function ProductsPage() {
               first_name?: string;
               campaign_name?: string;
               sms_recipient_id?: string;
+              last_spin_at?: string | null;
             }>(
               "sms_handoff",
               {
@@ -1086,6 +1085,10 @@ export default function ProductsPage() {
                   ?.spins_remaining ||
                 0,
               ),
+
+            lastSpinDate:
+              data.last_spin_at ||
+              null,
           });
 
           params.delete("sms_handoff");
@@ -1119,10 +1122,6 @@ export default function ProductsPage() {
               ? error.message
               : "Your Cash-Off account could not be connected.",
           );
-        }
-
-        finally {
-          setSmsHandoffLoading(false);
         }
 
         return;
@@ -1651,140 +1650,35 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {smsWelcome && (
-        <div
-          className="sms-return-overlay"
-          role="presentation"
-          onClick={() =>
-            setSmsWelcome(null)
-          }
-        >
-          <div
-            className="sms-return-card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sms-return-title"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-
-            <button
-              type="button"
-              className="sms-return-close"
-              aria-label="Close"
-              onClick={() =>
-                setSmsWelcome(null)
-              }
-            >
-              <X size={18} />
-            </button>
-
-
-            <div className="sms-return-brand">
-              <span>E</span>
-
-              <div>
-                <strong>
-                  EmmyTech
-                </strong>
-
-                <small>
-                  Cash-Off
-                </small>
-              </div>
-            </div>
-
-
-            <span className="sms-return-kicker">
-              WELCOME BACK
-            </span>
-
-
-            <h2 id="sms-return-title">
-              {smsWelcome.firstName}, your Cash-Off is ready.
-            </h2>
-
-
-            <p className="sms-return-copy">
-              Use it on any eligible product below
-              and pay less today.
-            </p>
-
-
-            <div className="sms-return-balance">
-              <span>
-                Your Cash-Off
-              </span>
-
-              <strong>
-                {formatRewardMoney(
-                  smsWelcome.cashOffBalance,
-                )}
-              </strong>
-            </div>
-
-
-            {smsWelcome.spinsRemaining > 0 && (
-              <div className="sms-return-spin-note">
-                <span className="sms-return-spin-icon">
-                  <i />
-                </span>
-
-                <div>
-                  <strong>
-                    {smsWelcome.spinsRemaining} spin{
-                      smsWelcome.spinsRemaining === 1
-                        ? ""
-                        : "s"
-                    } still available
-                  </strong>
-
-                  <small>
-                    Spin &amp; Save whenever you are ready.
-                  </small>
-                </div>
-              </div>
-            )}
-
-
-            <div className="sms-return-actions">
-
-              <button
-                type="button"
-                className="sms-return-primary"
-                onClick={() =>
-                  setSmsWelcome(null)
-                }
-              >
-                Shop with my Cash-Off
-              </button>
-
-
-              {smsWelcome.spinsRemaining > 0 && (
-                <button
-                  type="button"
-                  className="sms-return-secondary"
-                  onClick={() => {
-                    setSmsWelcome(null);
-                    void openSpinWheel();
-                  }}
-                >
-                  Use my {
-                    smsWelcome.spinsRemaining
-                  } spin{
-                    smsWelcome.spinsRemaining === 1
-                      ? ""
-                      : "s"
-                  }
-                </button>
-              )}
-
-            </div>
-
-          </div>
-        </div>
-      )}
+      <CashOffWelcomeModal
+        isOpen={Boolean(smsWelcome)}
+        onClose={() =>
+          setSmsWelcome(null)
+        }
+        userName={
+          smsWelcome?.firstName ||
+          ""
+        }
+        cashOffAmount={
+          smsWelcome?.cashOffBalance ||
+          0
+        }
+        lastSpinDate={
+          smsWelcome?.lastSpinDate ||
+          null
+        }
+        spinsRemaining={
+          smsWelcome?.spinsRemaining ||
+          0
+        }
+        onExploreProducts={() =>
+          setSmsWelcome(null)
+        }
+        onUseSpins={() => {
+          setSmsWelcome(null);
+          void openSpinWheel();
+        }}
+      />
 
       <div className={`sticky-control-bar ${controlBarVisible ? "visible" : "hidden"}`}>
         <div className="control-bar-inner section-shell">
