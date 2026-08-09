@@ -961,6 +961,8 @@ export default function ProductsPage() {
     useState(false);
   const [recommendationDismissed, setRecommendationDismissed] =
     useState(false);
+  const [recommendationReady, setRecommendationReady] =
+    useState(false);
   const [recommendationConfig, setRecommendationConfig] =
     useState<RecommendationConfig | null>(null);
 
@@ -2183,7 +2185,42 @@ export default function ProductsPage() {
 
   useEffect(() => {
     if (
+      !showCashOffRecommendations
+    ) {
+      setRecommendationReady(
+        false,
+      );
+
+      return;
+    }
+
+    setRecommendationReady(
+      false,
+    );
+
+    const timer =
+      window.setTimeout(
+        () => {
+          setRecommendationReady(
+            true,
+          );
+        },
+        4000,
+      );
+
+    return () => {
+      window.clearTimeout(
+        timer,
+      );
+    };
+  }, [
+    showCashOffRecommendations,
+  ]);
+
+  useEffect(() => {
+    if (
       !showCashOffRecommendations ||
+      !recommendationReady ||
       recommendationShownRef.current ||
       !recommendationConfig
     ) {
@@ -2220,6 +2257,7 @@ export default function ProductsPage() {
   }, [
     launcherCashOff,
     recommendationConfig,
+    recommendationReady,
     showCashOffRecommendations,
   ]);
 
@@ -2589,6 +2627,7 @@ export default function ProductsPage() {
       <section className="products-grid-section">
         <div className="section-shell">
           {showCashOffRecommendations &&
+            recommendationReady &&
             recommendationConfig ? (
             <CashOffRecommendations
               eyebrow={

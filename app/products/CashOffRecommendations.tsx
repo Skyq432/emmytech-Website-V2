@@ -67,6 +67,13 @@ export default function CashOffRecommendations({
   );
 
   const [
+    frontProductId,
+    setFrontProductId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
     animatingId,
     setAnimatingId,
   ] = useState<string | null>(
@@ -98,6 +105,71 @@ export default function CashOffRecommendations({
         validProducts,
       ],
     );
+
+  const stackedProducts =
+    useMemo(
+      () => {
+        if (
+          remainingProducts.length <=
+          1
+        ) {
+          return remainingProducts;
+        }
+
+        const front =
+          remainingProducts.find(
+            (
+              product,
+            ) =>
+              product.id ===
+              frontProductId,
+          ) ||
+          remainingProducts[0];
+
+        return [
+          front,
+          ...remainingProducts.filter(
+            (
+              product,
+            ) =>
+              product.id !==
+              front.id,
+          ),
+        ];
+      },
+      [
+        frontProductId,
+        remainingProducts,
+      ],
+    );
+
+  useEffect(
+    () => {
+      setRemovedIds(
+        new Set(),
+      );
+
+      setFrontProductId(
+        validProducts[0]
+          ?.id ||
+        null,
+      );
+
+      setAnimatingId(
+        null,
+      );
+    },
+    [
+      validProducts
+        .map(
+          (
+            product,
+          ) =>
+            product.id,
+        )
+        .join("|"),
+    ],
+  );
 
   useEffect(() => {
     const handleKeyDown =
@@ -140,7 +212,7 @@ export default function CashOffRecommendations({
   ]);
 
   if (
-    remainingProducts.length ===
+    stackedProducts.length ===
     0
   ) {
     return null;
@@ -388,6 +460,15 @@ export default function CashOffRecommendations({
         return;
       }
 
+      const nextFront =
+        remainingProducts.find(
+          (
+            item,
+          ) =>
+            item.id !==
+            product.id,
+        );
+
       setRemovedIds(
         (
           current,
@@ -403,6 +484,12 @@ export default function CashOffRecommendations({
 
           return next;
         },
+      );
+
+      setFrontProductId(
+        nextFront
+          ?.id ||
+        null,
       );
 
       window.setTimeout(
@@ -440,7 +527,7 @@ export default function CashOffRecommendations({
         </button>
 
         <div className="cashoff-stack-deck">
-          {remainingProducts.map(
+          {stackedProducts.map(
             (
               product,
               index,
@@ -472,18 +559,32 @@ export default function CashOffRecommendations({
                   }
                   style={{
                     zIndex:
-                      remainingProducts.length -
+                      stackedProducts.length -
                       index,
                   }}
                   onClick={(
                     event,
-                  ) =>
+                  ) => {
+                    if (
+                      !isFront
+                    ) {
+                      setFrontProductId(
+                        product.id,
+                      );
+
+                      return;
+                    }
+
                     void flyProductToCart(
                       product,
                       event.currentTarget,
-                    )
+                    );
+                  }}
+                  aria-label={
+                    isFront
+                      ? `Add ${product.name} to cart`
+                      : `Show ${product.name}`
                   }
-                  aria-label={`Add ${product.name} to cart`}
                 >
                   <div className="cashoff-stack-image-shell">
                     {product.image ? (
