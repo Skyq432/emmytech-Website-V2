@@ -2183,9 +2183,17 @@ export default function ProductsPage() {
       launcherCashOff > 0,
     );
 
+  const recommendationSurfaceAvailable =
+    Boolean(
+      showCashOffRecommendations &&
+      !wheelOpen &&
+      !isCartOpen &&
+      !showQuickView
+    );
+
   useEffect(() => {
     if (
-      !showCashOffRecommendations
+      !recommendationSurfaceAvailable
     ) {
       setRecommendationReady(
         false,
@@ -2214,12 +2222,12 @@ export default function ProductsPage() {
       );
     };
   }, [
-    showCashOffRecommendations,
+    recommendationSurfaceAvailable,
   ]);
 
   useEffect(() => {
     if (
-      !showCashOffRecommendations ||
+      !recommendationSurfaceAvailable ||
       !recommendationReady ||
       recommendationShownRef.current ||
       !recommendationConfig
@@ -2258,7 +2266,7 @@ export default function ProductsPage() {
     launcherCashOff,
     recommendationConfig,
     recommendationReady,
-    showCashOffRecommendations,
+    recommendationSurfaceAvailable,
   ]);
 
 
@@ -2626,7 +2634,7 @@ export default function ProductsPage() {
 
       <section className="products-grid-section">
         <div className="section-shell">
-          {showCashOffRecommendations &&
+          {recommendationSurfaceAvailable &&
             recommendationReady &&
             recommendationConfig ? (
             <CashOffRecommendations
