@@ -85,7 +85,7 @@ export default function CashOffRecommendations({
       () =>
         products
           .filter(Boolean)
-          .slice(0, 2),
+          .slice(0, 3),
       [products],
     );
 
@@ -546,7 +546,7 @@ export default function CashOffRecommendations({
                   className={`cashoff-stack-card ${
                     isFront
                       ? "is-front"
-                      : "is-back"
+                      : `is-back is-back-${index}`
                   } ${
                     isAnimating
                       ? "is-sending"

@@ -4624,3 +4624,53 @@
     border-radius: 12px;
   }
 }
+
+/* Three-card Cash-Off stack depth. */
+.products-page .cashoff-stack-card.is-back-1 {
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 438px;
+  opacity: 0.94;
+  transform:
+    scale(0.96)
+    rotateY(2deg)
+    translateZ(-10px);
+}
+
+.products-page .cashoff-stack-card.is-back-2 {
+  top: -20px;
+  right: -18px;
+  width: 282px;
+  height: 414px;
+  opacity: 0.76;
+  transform:
+    scale(0.91)
+    rotateY(3deg)
+    translateZ(-24px);
+  box-shadow:
+    0 16px 34px rgba(5, 12, 39, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.products-page .cashoff-stack-card.is-back-2:hover:not(:disabled) {
+  opacity: 0.88;
+  transform:
+    scale(0.925)
+    rotateY(2deg)
+    translateZ(-18px);
+}
+
+@media (max-width: 480px) {
+  .products-page .cashoff-stack-card.is-back-1 {
+    width: 260px;
+    height: 392px;
+  }
+
+  .products-page .cashoff-stack-card.is-back-2 {
+    top: -16px;
+    right: -12px;
+    width: 244px;
+    height: 370px;
+  }
+}

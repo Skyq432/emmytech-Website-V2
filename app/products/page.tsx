@@ -1477,7 +1477,7 @@ export default function ProductsPage() {
           !Array.isArray(
             payload.products,
           ) ||
-          payload.products.length !== 2
+          payload.products.length !== 3
         ) {
           setRecommendationConfig(
             null,
@@ -1492,7 +1492,7 @@ export default function ProductsPage() {
 
         if (
           mappedProducts.length !==
-          2
+          3
         ) {
           return;
         }
@@ -1507,11 +1507,11 @@ export default function ProductsPage() {
 
           headline:
             payload.headline ||
-            "Two products worth a look",
+            "Three products worth a look",
 
           bodyText:
             payload.body_text ||
-            "Here are two options you can explore with your saved Cash-Off.",
+            "Here are three options you can explore with your saved Cash-Off.",
 
           products:
             mappedProducts,
@@ -2179,7 +2179,7 @@ export default function ProductsPage() {
       recommendationEligible &&
       !recommendationDismissed &&
       !smsWelcome &&
-      recommendationConfig.products.length === 2 &&
+      recommendationConfig.products.length === 3 &&
       launcherCashOff > 0,
     );
 
