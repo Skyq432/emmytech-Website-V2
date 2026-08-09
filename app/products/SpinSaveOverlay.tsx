@@ -354,7 +354,19 @@ export default function SpinSaveOverlay({
   const hasSpins = spinsRemaining > 0;
   const cashOffBalance = Number(state?.cash_off_balance || 0);
   const challenge = state?.cash_challenge;
-  const cashWallet = Number(challenge?.cash_balance ?? state?.spin_player?.wallet_balance ?? 0);
+
+  // Once a cash challenge has been converted, its old cash wallet
+  // is historical. The current Cash-Off balance is the customer-facing
+  // source of truth.
+  const challengeConverted =
+    Boolean(challenge?.converted_to_cash_off);
+
+  const cashWallet =
+    Number(
+      challenge?.cash_balance ??
+      state?.spin_player?.wallet_balance ??
+      0
+    );
   const cashoutTarget = Math.max(1, Number(challenge?.cash_target || state?.spin_player?.cashout_target || 1000));
   const cashCap = Math.max(cashoutTarget, Number(challenge?.cash_cap || 3000));
   const cashoutProgress = Math.min(100, Math.max(0, Number(challenge?.progress_percent ?? (cashWallet / cashoutTarget) * 100)));
@@ -368,9 +380,7 @@ export default function SpinSaveOverlay({
     ? "24-hour cash challenge is live"
     : challenge?.cash_eligible
       ? "Cash withdrawal unlocked"
-      : challenge?.converted_to_cash_off
-        ? "Challenge converted to Cash-Off"
-        : "Your first cash win starts 24 hours";
+      : "Your first cash win starts 24 hours";
 
   const challengeNote = challenge?.active
     ? cashWallet >= cashoutTarget
@@ -378,9 +388,7 @@ export default function SpinSaveOverlay({
       : `${money(Math.max(0, cashoutTarget - cashWallet))} more unlocks cash eligibility when the timer ends.`
     : challenge?.cash_eligible
       ? `${money(cashWallet)} is eligible for cash withdrawal.`
-      : challenge?.converted_to_cash_off
-        ? `${money(Number(challenge.converted_cash_off_amount || 0))} was added to your Cash-Off balance.`
-        : "Win cash on the wheel to begin the countdown.";
+      : "Win cash on the wheel to begin the countdown.";
 
   const resultHeading = result
     ? resultCashWon > 0
@@ -436,26 +444,45 @@ export default function SpinSaveOverlay({
             EmmyTech <span>Spin &amp; Save</span>
           </h2>
 
-          <section className={`cash-challenge-strip ${challenge?.status || "not_started"}`} aria-live="polite">
-            <div className="cash-challenge-strip-icon">
-              {challenge?.cash_eligible ? <ShieldCheck size={20} /> : <Clock3 size={20} />}
-            </div>
-            <div className="cash-challenge-strip-copy">
-              <small>{challengeTitle}</small>
-              <strong>
-                {challenge?.active ? formatCountdown(secondsRemaining) : challenge?.cash_eligible ? "CASH READY" : challenge?.converted_to_cash_off ? "CONVERTED" : "24:00:00"}
-              </strong>
-              <p>{challengeNote}</p>
-            </div>
-            <div className="cash-challenge-strip-balance">
-              <small>Cash</small>
-              <strong>{money(cashWallet)}</strong>
-              <span>Cap {money(cashCap)}</span>
-            </div>
-            <div className="cash-challenge-strip-progress" aria-label={`${Math.round(cashoutProgress)}% of cash target`}>
-              <i style={{ width: `${cashoutProgress}%` }} />
-            </div>
-          </section>
+          {!challengeConverted ? (
+            <section
+              className={`cash-challenge-strip ${challenge?.status || "not_started"}`}
+              aria-live="polite"
+            >
+              <div className="cash-challenge-strip-icon">
+                {challenge?.cash_eligible
+                  ? <ShieldCheck size={20} />
+                  : <Clock3 size={20} />}
+              </div>
+
+              <div className="cash-challenge-strip-copy">
+                <small>{challengeTitle}</small>
+
+                <strong>
+                  {challenge?.active
+                    ? formatCountdown(secondsRemaining)
+                    : challenge?.cash_eligible
+                      ? "CASH READY"
+                      : "24:00:00"}
+                </strong>
+
+                <p>{challengeNote}</p>
+              </div>
+
+              <div className="cash-challenge-strip-balance">
+                <small>Cash</small>
+                <strong>{money(cashWallet)}</strong>
+                <span>Cap {money(cashCap)}</span>
+              </div>
+
+              <div
+                className="cash-challenge-strip-progress"
+                aria-label={`${Math.round(cashoutProgress)}% of cash target`}
+              >
+                <i style={{ width: `${cashoutProgress}%` }} />
+              </div>
+            </section>
+          ) : null}
 
           <CashOffWheel
             prizes={state?.active_prizes}
@@ -552,38 +579,71 @@ export default function SpinSaveOverlay({
                 <p>Shopping credit you can apply to one eligible cart item.</p>
               </div>
 
-              <div className="cashoff-wallet-grid">
-                <article>
-                  <small>24-hour cash</small>
-                  <strong>{money(cashWallet)}</strong>
-                </article>
-                <article>
-                  <small>Time remaining</small>
-                  <strong className="cashoff-time-value">
-                    {challenge?.active ? formatCountdown(secondsRemaining) : challenge?.cash_eligible ? "Ready" : "—"}
-                  </strong>
-                </article>
+              <div
+                className={`cashoff-wallet-grid ${
+                  challengeConverted
+                    ? "cashoff-wallet-grid-complete"
+                    : ""
+                }`}
+              >
+                {!challengeConverted ? (
+                  <>
+                    <article>
+                      <small>24-hour cash</small>
+                      <strong>{money(cashWallet)}</strong>
+                    </article>
+
+                    <article>
+                      <small>Time remaining</small>
+                      <strong className="cashoff-time-value">
+                        {challenge?.active
+                          ? formatCountdown(secondsRemaining)
+                          : challenge?.cash_eligible
+                            ? "Ready"
+                            : "—"}
+                      </strong>
+                    </article>
+                  </>
+                ) : null}
+
                 <article>
                   <small>Spins left</small>
                   <strong>{spinsRemaining}</strong>
                 </article>
               </div>
 
-              <div className="cashoff-cashout-progress">
-                <div>
-                  <small>Cash target progress</small>
-                  <strong>{money(cashWallet)} / {money(cashoutTarget)}</strong>
-                </div>
-                <span><i style={{ width: `${cashoutProgress}%` }} /></span>
-              </div>
+              {!challengeConverted ? (
+                <>
+                  <div className="cashoff-cashout-progress">
+                    <div>
+                      <small>Cash target progress</small>
+                      <strong>
+                        {money(cashWallet)} / {money(cashoutTarget)}
+                      </strong>
+                    </div>
 
-              <div className="cash-challenge-rules">
-                <TrendingUp size={18} />
-                <div>
-                  <strong>What happens after 24 hours?</strong>
-                  <p>Below ₦700 becomes the same Cash-Off. ₦700–₦999 becomes ₦1,000 Cash-Off. ₦1,000–₦3,000 becomes cash eligible.</p>
-                </div>
-              </div>
+                    <span>
+                      <i style={{ width: `${cashoutProgress}%` }} />
+                    </span>
+                  </div>
+
+                  <div className="cash-challenge-rules">
+                    <TrendingUp size={18} />
+
+                    <div>
+                      <strong>
+                        What happens after 24 hours?
+                      </strong>
+
+                      <p>
+                        Below ₦700 becomes the same Cash-Off.
+                        ₦700–₦999 becomes ₦1,000 Cash-Off.
+                        ₦1,000–₦3,000 becomes cash eligible.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : null}
 
               <button
                 type="button"

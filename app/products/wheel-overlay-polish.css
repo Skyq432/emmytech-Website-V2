@@ -249,22 +249,22 @@
   margin: 18px auto 2px;
   padding: 13px 14px 17px;
   overflow: hidden;
-  border: 1px solid #dce8e2;
+  border: 1px solid #dbe3f2;
   border-radius: 17px;
-  background: linear-gradient(135deg, #f7fcf9 0%, #eef8f3 100%);
-  color: #153f2d;
+  background: linear-gradient(135deg, #f8faff 0%, #eef3fc 100%);
+  color: #0f1b5e;
   text-align: left;
 }
 
 .products-page .cash-challenge-strip.active {
-  border-color: #b7dfc8;
-  background: linear-gradient(135deg, #f3fbf6 0%, #e5f6ed 100%);
-  box-shadow: 0 10px 24px rgba(38, 122, 79, .09);
+  border-color: #c8d6ef;
+  background: linear-gradient(135deg, #f5f8ff 0%, #eaf0fb 100%);
+  box-shadow: 0 10px 24px rgba(15, 27, 94, .08);
 }
 
 .products-page .cash-challenge-strip.cash_eligible {
-  border-color: #9fd2b4;
-  background: linear-gradient(135deg, #eaf8f0 0%, #d9f1e3 100%);
+  border-color: #ebce82;
+  background: linear-gradient(135deg, #fffaf0 0%, #fdf3dc 100%);
 }
 
 .products-page .cash-challenge-strip.converted_to_cash_off {
@@ -280,8 +280,8 @@
   height: 38px;
   border-radius: 12px;
   background: #ffffff;
-  color: #1b8a58;
-  box-shadow: 0 5px 14px rgba(40, 110, 74, .1);
+  color: #0f1b5e;
+  box-shadow: 0 5px 14px rgba(15, 27, 94, .10);
 }
 
 .products-page .cash-challenge-strip-copy {
@@ -291,7 +291,7 @@
 .products-page .cash-challenge-strip-copy small,
 .products-page .cash-challenge-strip-balance small {
   display: block;
-  color: #56816b;
+  color: #707b91;
   font-size: .48rem;
   font-weight: 900;
   letter-spacing: .08em;
@@ -301,7 +301,7 @@
 .products-page .cash-challenge-strip-copy strong {
   display: block;
   margin-top: 2px;
-  color: #155b39;
+  color: #0f1b5e;
   font-variant-numeric: tabular-nums;
   font-size: 1.08rem;
   font-weight: 950;
@@ -310,7 +310,7 @@
 
 .products-page .cash-challenge-strip-copy p {
   margin: 3px 0 0;
-  color: #4c6c5b;
+  color: #68748a;
   font-size: .58rem;
   font-weight: 700;
   line-height: 1.35;
@@ -324,7 +324,7 @@
 .products-page .cash-challenge-strip-balance strong {
   display: block;
   margin-top: 2px;
-  color: #0b2f20;
+  color: #151a33;
   font-size: .94rem;
   font-weight: 950;
 }
@@ -332,7 +332,7 @@
 .products-page .cash-challenge-strip-balance span {
   display: block;
   margin-top: 2px;
-  color: #6d8779;
+  color: #858d9d;
   font-size: .45rem;
   font-weight: 800;
 }
@@ -343,14 +343,14 @@
   bottom: 0;
   left: 0;
   height: 4px;
-  background: rgba(45, 129, 83, .11);
+  background: rgba(15, 27, 94, .10);
 }
 
 .products-page .cash-challenge-strip-progress i {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #31a66d 0%, #8bd5ad 100%);
+  background: linear-gradient(90deg, #0f1b5e 0%, #315ec8 65%, #f5a800 100%);
   transition: width .45s ease;
 }
 
@@ -377,10 +377,10 @@
   gap: 10px;
   margin-top: 12px;
   padding: 12px;
-  border: 1px solid #dce9e2;
+  border: 1px solid #dbe3f2;
   border-radius: 13px;
-  background: #f5fbf7;
-  color: #24734d;
+  background: #f8faff;
+  color: #0f1b5e;
   text-align: left;
 }
 
@@ -391,14 +391,14 @@
 
 .products-page .cash-challenge-rules strong {
   display: block;
-  color: #174c34;
+  color: #0f1b5e;
   font-size: .62rem;
   font-weight: 900;
 }
 
 .products-page .cash-challenge-rules p {
   margin: 3px 0 0;
-  color: #527160;
+  color: #68748a;
   font-size: .54rem;
   font-weight: 650;
   line-height: 1.45;
@@ -457,3 +457,24 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* EmmyTech-only colour treatment for Spin & Save */
+.products-page .cash-challenge-strip.cash_eligible
+.cash-challenge-strip-icon {
+  color: #b97600;
+}
+
+.products-page .cash-challenge-strip.cash_eligible
+.cash-challenge-strip-copy strong {
+  color: #0f1b5e;
+}
+
+.products-page .cashoff-wallet-grid-complete {
+  grid-template-columns: 1fr;
+}
+
+.products-page .cashoff-wallet-grid-complete article {
+  text-align: center;
+}
+
