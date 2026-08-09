@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SiteTracker from '@/components/SiteTracker';
 
 export const metadata: Metadata = {
   title: 'Emmy Technology | Laptops, Repairs, Solar & IT Support in Ibadan',
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <SiteTracker />
         <Header />
         <div className="page-wrapper">
           {children}

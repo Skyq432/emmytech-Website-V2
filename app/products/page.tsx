@@ -39,14 +39,11 @@ import CTA from "@/components/CTA";
 import { brand } from "@/lib/site-data";
 import {
   trackingSupabase as supabase,
-  registerVisitor,
   trackAddToCart,
-  trackPageViewed,
   trackProductQuickView,
   trackProductShared,
   trackProductView,
   trackRemoveFromCart,
-  trackWebsiteVisited,
   trackWhatsAppPurchaseClicked,
   createFullWheelUrl,
   getVisitorId,
@@ -1373,25 +1370,6 @@ export default function ProductsPage() {
     };
 
     void fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const referralCode =
-      params.get("ref") ||
-      params.get("code") ||
-      params.get("ambassador") ||
-      localStorage.getItem("emmy_referral_code");
-
-    if (referralCode) {
-      localStorage.setItem("emmy_referral_code", referralCode);
-    }
-
-    void registerVisitor(referralCode).then((visitorId) => {
-      if (!visitorId) return;
-      void trackWebsiteVisited();
-      void trackPageViewed();
-    });
   }, []);
 
   const fetchProducts = useCallback(async (append = false) => {
