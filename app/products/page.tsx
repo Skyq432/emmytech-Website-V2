@@ -9,6 +9,7 @@ import "./cart-polish.css";
 import "./wheel-overlay-polish.css";
 import SpinSaveOverlay from "./SpinSaveOverlay";
 import CashOffWelcomeModal from "./CashOffWelcomeModal";
+import CashOffRecommendations from "./CashOffRecommendations";
 import {
   ShoppingCart,
   Search,
@@ -141,6 +142,8 @@ const PAGE_SIZE = 12;
 const CASH_OFF_SELECTION_KEY = "emmy_cash_off_product";
 const WHEEL_SESSION_KEY = "emmy_wheel_session";
 const REWARD_PROFILE_KEY = "emmy_reward_profile_connected";
+const SMS_RETURN_SESSION_KEY = "emmy_sms_cashoff_return";
+const RECOMMENDATION_DISMISSED_KEY = "emmy_cashoff_recommendations_dismissed";
 
 interface CashChallengeState {
   id?: string;
@@ -174,6 +177,15 @@ interface SmsWelcomeState {
   cashOffBalance: number;
   spinsRemaining: number;
   lastSpinDate: string | null;
+}
+
+interface RecommendationConfig {
+  enabled: boolean;
+  eyebrow: string;
+  headline: string;
+  bodyText: string;
+  products: Product[];
+  updatedAt: string | null;
 }
 
 interface WheelSpinResult {
@@ -945,6 +957,13 @@ export default function ProductsPage() {
   const [smsWelcome, setSmsWelcome] =
     useState<SmsWelcomeState | null>(null);
 
+  const [recommendationEligible, setRecommendationEligible] =
+    useState(false);
+  const [recommendationDismissed, setRecommendationDismissed] =
+    useState(false);
+  const [recommendationConfig, setRecommendationConfig] =
+    useState<RecommendationConfig | null>(null);
+
   const [wheelLoading, setWheelLoading] = useState(false);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelSpinResult, setWheelSpinResult] = useState<WheelSpinResult | null>(null);
@@ -959,6 +978,7 @@ export default function ProductsPage() {
   const galleryCache = useRef<Map<string, GalleryCacheEntry>>(new Map());
   const galleryRequestSequence = useRef(0);
   const requestSequence = useRef(0);
+  const recommendationShownRef = useRef(false);
 
   const [controlBarVisible, setControlBarVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -999,6 +1019,18 @@ export default function ProductsPage() {
   useEffect(() => {
     setRewardProfileReady(
       window.localStorage.getItem(REWARD_PROFILE_KEY) === "1",
+    );
+
+    setRecommendationEligible(
+      window.sessionStorage.getItem(
+        SMS_RETURN_SESSION_KEY,
+      ) === "1",
+    );
+
+    setRecommendationDismissed(
+      window.sessionStorage.getItem(
+        RECOMMENDATION_DISMISSED_KEY,
+      ) === "1",
     );
 
     const stored =
@@ -1094,6 +1126,28 @@ export default function ProductsPage() {
               data.last_spin_at ||
               null,
           });
+
+          if (returnedCashOff > 0) {
+            window.sessionStorage.setItem(
+              SMS_RETURN_SESSION_KEY,
+              "1",
+            );
+
+            window.sessionStorage.removeItem(
+              RECOMMENDATION_DISMISSED_KEY,
+            );
+
+            recommendationShownRef.current =
+              false;
+
+            setRecommendationEligible(
+              true,
+            );
+
+            setRecommendationDismissed(
+              false,
+            );
+          }
 
           void trackWebsiteEvent(
             "sms_returned",
@@ -1372,6 +1426,112 @@ export default function ProductsPage() {
     void fetchCategories();
   }, []);
 
+
+  useEffect(() => {
+    if (
+      !recommendationEligible ||
+      recommendationDismissed
+    ) {
+      return;
+    }
+
+    let cancelled =
+      false;
+
+    const loadRecommendations =
+      async () => {
+        const {
+          data,
+          error,
+        } =
+          await supabase.rpc(
+            "get_cashoff_recommendations",
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        if (error) {
+          console.warn(
+            "Cash-Off recommendations could not be loaded.",
+            error,
+          );
+          return;
+        }
+
+        const payload =
+          data as {
+            enabled?: boolean;
+            eyebrow?: string;
+            headline?: string;
+            body_text?: string;
+            updated_at?: string | null;
+            products?: any[];
+          } | null;
+
+        if (
+          !payload?.enabled ||
+          !Array.isArray(
+            payload.products,
+          ) ||
+          payload.products.length !== 2
+        ) {
+          setRecommendationConfig(
+            null,
+          );
+          return;
+        }
+
+        const mappedProducts =
+          payload.products.map(
+            mapProduct,
+          );
+
+        if (
+          mappedProducts.length !==
+          2
+        ) {
+          return;
+        }
+
+        setRecommendationConfig({
+          enabled:
+            true,
+
+          eyebrow:
+            payload.eyebrow ||
+            "For your Cash-Off",
+
+          headline:
+            payload.headline ||
+            "Two products worth a look",
+
+          bodyText:
+            payload.body_text ||
+            "Here are two options you can explore with your saved Cash-Off.",
+
+          products:
+            mappedProducts,
+
+          updatedAt:
+            payload.updated_at ||
+            null,
+        });
+      };
+
+    void loadRecommendations();
+
+    return () => {
+      cancelled =
+        true;
+    };
+  }, [
+    recommendationDismissed,
+    recommendationEligible,
+  ]);
+
+
   const fetchProducts = useCallback(async (append = false) => {
     const requestId = ++requestSequence.current;
     const from = append ? products.length : 0;
@@ -1603,6 +1763,43 @@ export default function ProductsPage() {
     (product: Product) => void openProductModal(product, "quick_view"),
     [openProductModal],
   );
+
+  const openRecommendedProduct =
+    useCallback(
+      (
+        product: Product,
+      ) => {
+        void trackWebsiteEvent(
+          "recommendation_clicked",
+          {
+            productId:
+              product.id,
+
+            metadata: {
+              placement:
+                "products_top",
+
+              cash_off_balance:
+                Number(
+                  wheelState
+                    ?.cash_off_balance ||
+                  0,
+                ),
+            },
+          },
+        );
+
+        void openProductModal(
+          product,
+          "view",
+        );
+      },
+      [
+        openProductModal,
+        wheelState
+          ?.cash_off_balance,
+      ],
+    );
 
   const shareProduct = useCallback(async (product: Product) => {
     const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
@@ -1906,6 +2103,59 @@ export default function ProductsPage() {
           : launcherSpins > 0
             ? `${launcherSpins} spin${launcherSpins === 1 ? "" : "s"} ready`
             : "Tap to play";
+
+  const showCashOffRecommendations =
+    Boolean(
+      recommendationConfig?.enabled &&
+      recommendationEligible &&
+      !recommendationDismissed &&
+      !smsWelcome &&
+      recommendationConfig.products.length === 2 &&
+      launcherCashOff > 0,
+    );
+
+  useEffect(() => {
+    if (
+      !showCashOffRecommendations ||
+      recommendationShownRef.current ||
+      !recommendationConfig
+    ) {
+      return;
+    }
+
+    recommendationShownRef.current =
+      true;
+
+    void trackWebsiteEvent(
+      "recommendation_shown",
+      {
+        metadata: {
+          placement:
+            "products_top",
+
+          product_ids:
+            recommendationConfig
+              .products
+              .map(
+                (product) =>
+                  product.id,
+              ),
+
+          cash_off_balance:
+            launcherCashOff,
+
+          config_updated_at:
+            recommendationConfig
+              .updatedAt,
+        },
+      },
+    );
+  }, [
+    launcherCashOff,
+    recommendationConfig,
+    showCashOffRecommendations,
+  ]);
+
 
   return (
     <main className="products-page">
@@ -2271,6 +2521,64 @@ export default function ProductsPage() {
 
       <section className="products-grid-section">
         <div className="section-shell">
+          {showCashOffRecommendations &&
+            recommendationConfig ? (
+            <CashOffRecommendations
+              eyebrow={
+                recommendationConfig.eyebrow
+              }
+              headline={
+                recommendationConfig.headline
+              }
+              bodyText={
+                recommendationConfig.bodyText
+              }
+              cashOffAmount={
+                launcherCashOff
+              }
+              products={
+                recommendationConfig.products
+              }
+              onProductClick={(
+                product,
+              ) =>
+                openRecommendedProduct(
+                  product as Product,
+                )
+              }
+              onDismiss={() => {
+                window.sessionStorage.setItem(
+                  RECOMMENDATION_DISMISSED_KEY,
+                  "1",
+                );
+
+                setRecommendationDismissed(
+                  true,
+                );
+
+                void trackWebsiteEvent(
+                  "recommendation_dismissed",
+                  {
+                    metadata: {
+                      placement:
+                        "products_top",
+
+                      product_ids:
+                        recommendationConfig
+                          .products
+                          .map(
+                            (
+                              product,
+                            ) =>
+                              product.id,
+                          ),
+                    },
+                  },
+                );
+              }}
+            />
+          ) : null}
+
           {spinError && <div className="spin-handoff-error" role="alert">{spinError}</div>}
           {loading ? (
             <LoadingSpinner />
