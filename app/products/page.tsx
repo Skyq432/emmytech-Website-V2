@@ -1651,94 +1651,139 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {smsHandoffLoading && (
-        <section className="sms-cashoff-section">
-          <div className="section-shell">
-            <div className="sms-cashoff-banner sms-cashoff-loading">
+      {smsWelcome && (
+        <div
+          className="sms-return-overlay"
+          role="presentation"
+          onClick={() =>
+            setSmsWelcome(null)
+          }
+        >
+          <div
+            className="sms-return-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sms-return-title"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            <button
+              type="button"
+              className="sms-return-close"
+              aria-label="Close"
+              onClick={() =>
+                setSmsWelcome(null)
+              }
+            >
+              <X size={18} />
+            </button>
+
+
+            <div className="sms-return-brand">
+              <span>E</span>
+
               <div>
-                <span className="sms-cashoff-eyebrow">
-                  EMMYTECH CASH-OFF
-                </span>
+                <strong>
+                  EmmyTech
+                </strong>
 
-                <h2>
-                  Connecting your Spin &amp; Save account…
-                </h2>
-
-                <p>
-                  We are restoring your existing Cash-Off and spins.
-                </p>
+                <small>
+                  Cash-Off
+                </small>
               </div>
-
-              <Loader2
-                size={28}
-                className="animate-spin"
-              />
             </div>
-          </div>
-        </section>
-      )}
 
-      {smsWelcome && !smsHandoffLoading && (
-        <section className="sms-cashoff-section">
-          <div className="section-shell">
-            <div className="sms-cashoff-banner">
 
-              <div className="sms-cashoff-copy">
-                <span className="sms-cashoff-eyebrow">
-                  WELCOME BACK
+            <span className="sms-return-kicker">
+              WELCOME BACK
+            </span>
+
+
+            <h2 id="sms-return-title">
+              {smsWelcome.firstName}, your Cash-Off is ready.
+            </h2>
+
+
+            <p className="sms-return-copy">
+              Use it on any eligible product below
+              and pay less today.
+            </p>
+
+
+            <div className="sms-return-balance">
+              <span>
+                Your Cash-Off
+              </span>
+
+              <strong>
+                {formatRewardMoney(
+                  smsWelcome.cashOffBalance,
+                )}
+              </strong>
+            </div>
+
+
+            {smsWelcome.spinsRemaining > 0 && (
+              <div className="sms-return-spin-note">
+                <span className="sms-return-spin-icon">
+                  <i />
                 </span>
 
-                <h2>
-                  {smsWelcome.firstName}, your EmmyTech rewards are still here.
-                </h2>
+                <div>
+                  <strong>
+                    {smsWelcome.spinsRemaining} spin{
+                      smsWelcome.spinsRemaining === 1
+                        ? ""
+                        : "s"
+                    } still available
+                  </strong>
 
-                <p>
-                  When you used EmmyTech Spin &amp; Save,
-                  you built up rewards on your account.
-                  We connected them automatically, so you
-                  do not need to enter your details again.
-                </p>
+                  <small>
+                    Spin &amp; Save whenever you are ready.
+                  </small>
+                </div>
               </div>
+            )}
 
-              <div className="sms-cashoff-rewards">
 
-                <div className="sms-reward-card">
-                  <span>
-                    Cash-Off available
-                  </span>
+            <div className="sms-return-actions">
 
-                  <strong>
-                    {formatRewardMoney(
-                      smsWelcome.cashOffBalance,
-                    )}
-                  </strong>
-                </div>
+              <button
+                type="button"
+                className="sms-return-primary"
+                onClick={() =>
+                  setSmsWelcome(null)
+                }
+              >
+                Shop with my Cash-Off
+              </button>
 
-                <div className="sms-reward-card">
-                  <span>
-                    Spins available
-                  </span>
 
-                  <strong>
-                    {smsWelcome.spinsRemaining}
-                  </strong>
-                </div>
-
+              {smsWelcome.spinsRemaining > 0 && (
                 <button
                   type="button"
-                  className="sms-cashoff-close"
-                  onClick={() =>
-                    setSmsWelcome(null)
-                  }
+                  className="sms-return-secondary"
+                  onClick={() => {
+                    setSmsWelcome(null);
+                    void openSpinWheel();
+                  }}
                 >
-                  Start shopping
+                  Use my {
+                    smsWelcome.spinsRemaining
+                  } spin{
+                    smsWelcome.spinsRemaining === 1
+                      ? ""
+                      : "s"
+                  }
                 </button>
-
-              </div>
+              )}
 
             </div>
+
           </div>
-        </section>
+        </div>
       )}
 
       <div className={`sticky-control-bar ${controlBarVisible ? "visible" : "hidden"}`}>
