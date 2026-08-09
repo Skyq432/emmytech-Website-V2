@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 
 export interface CashOffRecommendationProduct {
   id: string;
@@ -89,19 +89,6 @@ export default function CashOffRecommendations({
     return null;
   }
 
-  const currentProduct =
-    validProducts[
-      currentIndex
-    ] as CashOffRecommendationProduct;
-
-  const nextProduct =
-    validProducts[
-      (currentIndex + 1) %
-        validProducts.length
-    ] as
-      | CashOffRecommendationProduct
-      | undefined;
-
   const changeCard = (direction: "next" | "prev") => {
     setCurrentIndex((previous) => {
       if (direction === "next") {
@@ -133,97 +120,82 @@ export default function CashOffRecommendations({
         </button>
 
         <div className="cashoff-stack-deck">
-          {nextProduct &&
-          validProducts.length > 1 ? (
-            <button
-              type="button"
-              className="cashoff-stack-card is-back"
-              onClick={() =>
-                changeCard("next")
-              }
-              aria-label={`Show ${nextProduct.name}`}
-            >
-              <div className="cashoff-stack-image-shell">
-                {nextProduct.image ? (
-                  <Image
-                    src={nextProduct.image}
-                    alt={nextProduct.name}
-                    fill
-                    sizes="240px"
-                    className="cashoff-stack-image"
-                  />
-                ) : (
-                  <div className="cashoff-stack-image-placeholder">
-                    <Sparkles size={22} />
-                  </div>
-                )}
-              </div>
-            </button>
-          ) : null}
+          {validProducts.map((product, index) => {
+            const offset =
+              (index - currentIndex + validProducts.length) %
+              validProducts.length;
+            const isFront = offset === 0;
 
-          <button
-            type="button"
-            className="cashoff-stack-card is-front"
-            onClick={() =>
-              onProductClick(currentProduct)
-            }
-            aria-labelledby="cashoff-stack-title"
-          >
-            <div className="cashoff-stack-image-shell">
-              {currentProduct.image ? (
-                <Image
-                  src={currentProduct.image}
-                  alt={currentProduct.name}
-                  fill
-                  sizes="300px"
-                  className="cashoff-stack-image"
-                />
-              ) : (
-                <div className="cashoff-stack-image-placeholder">
-                  <Sparkles size={26} />
-                </div>
-              )}
-            </div>
-
-            <div className="cashoff-stack-content">
-              <p
-                id="cashoff-stack-title"
-                className="cashoff-stack-microcopy"
+            return (
+              <button
+                key={product.id}
+                type="button"
+                className={`cashoff-stack-card ${
+                  isFront ? "is-front" : "is-back"
+                }`}
+                style={{
+                  zIndex: validProducts.length - offset,
+                }}
+                onClick={() =>
+                  isFront
+                    ? onProductClick(product)
+                    : setCurrentIndex(index)
+                }
+                aria-label={
+                  isFront ? undefined : `Show ${product.name}`
+                }
+                aria-labelledby={
+                  isFront ? "cashoff-stack-title" : undefined
+                }
               >
-                People are buying this with Cash-Off
-              </p>
+                <div className="cashoff-stack-image-shell">
+                  {product.image ? (
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      sizes={isFront ? "300px" : "240px"}
+                      className="cashoff-stack-image"
+                    />
+                  ) : (
+                    <div className="cashoff-stack-image-placeholder">
+                      <Sparkles size={isFront ? 26 : 22} />
+                    </div>
+                  )}
+                </div>
 
-              <h3 className="cashoff-stack-name">
-                {currentProduct.name}
-              </h3>
+                {isFront ? (
+                  <div className="cashoff-stack-content">
+                    <p
+                      id="cashoff-stack-title"
+                      className="cashoff-stack-microcopy"
+                    >
+                      People are buying this with Cash-Off
+                    </p>
 
-              <div className="cashoff-stack-price-row">
-                <strong>
-                  {money(currentProduct.price)}
-                </strong>
+                    <h3 className="cashoff-stack-name">
+                      {product.name}
+                    </h3>
 
-                {currentProduct.original_price &&
-                currentProduct.original_price >
-                  currentProduct.price ? (
-                  <span>
-                    {money(
-                      currentProduct.original_price,
-                    )}
-                  </span>
+                    <div className="cashoff-stack-price-row">
+                      <strong>
+                        {money(product.price)}
+                      </strong>
+
+                      {product.original_price &&
+                      product.original_price >
+                        product.price ? (
+                        <span>
+                          {money(product.original_price)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                  </div>
                 ) : null}
-              </div>
-
-              <div className="cashoff-stack-action-row">
-                <span className="cashoff-stack-chip">
-                  Tap to view product
-                </span>
-
-                <span className="cashoff-stack-arrow">
-                  <ArrowRight size={18} />
-                </span>
-              </div>
-            </div>
-          </button>
+              </button>
+            );
+          })}
         </div>
 
         {validProducts.length > 1 ? (
