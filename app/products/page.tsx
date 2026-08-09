@@ -56,7 +56,10 @@ import {
   trackReturnedFromFullWheel,
 } from "@/lib/tracking";
 
-async function callWheelApi<T>(operation: "bootstrap" | "state" | "spin", params: Record<string, unknown>) {
+async function callWheelApi<T>(
+  operation: "bootstrap" | "state" | "spin" | "sms_handoff",
+  params: Record<string, unknown>,
+) {
   const response = await fetch("/api/wheel", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -165,6 +168,12 @@ interface WheelState {
   spin_player?: { spins_remaining?: number; wallet_balance?: number; last_prize_won?: string; cashout_target?: number; spin_sequence_step?: number; cashout_eligible?: boolean };
   active_prizes?: Array<{ id?: string; label?: string; monetary_value?: number }>;
   awarded_prizes?: Array<{ id?: string; prize_label?: string; result_label?: string; status?: string; created_at?: string }>;
+}
+
+interface SmsWelcomeState {
+  firstName: string;
+  cashOffBalance: number;
+  spinsRemaining: number;
 }
 
 interface WheelSpinResult {
@@ -932,6 +941,13 @@ export default function ProductsPage() {
   const [spinError, setSpinError] = useState<string | null>(null);
   const [wheelOpen, setWheelOpen] = useState(false);
   const [wheelState, setWheelState] = useState<WheelState | null>(null);
+
+  const [smsWelcome, setSmsWelcome] =
+    useState<SmsWelcomeState | null>(null);
+
+  const [smsHandoffLoading, setSmsHandoffLoading] =
+    useState(false);
+
   const [wheelLoading, setWheelLoading] = useState(false);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelSpinResult, setWheelSpinResult] = useState<WheelSpinResult | null>(null);
@@ -984,19 +1000,194 @@ export default function ProductsPage() {
   }, [refreshWheelState]);
 
   useEffect(() => {
-    setRewardProfileReady(window.localStorage.getItem(REWARD_PROFILE_KEY) === "1");
-    const stored = window.localStorage.getItem(CASH_OFF_SELECTION_KEY);
-    if (stored) setSelectedCashOffProductId(stored);
-    void ensureWheelState().catch((error) => console.warn("Wheel preload failed.", error));
+    setRewardProfileReady(
+      window.localStorage.getItem(REWARD_PROFILE_KEY) === "1",
+    );
+
+    const stored =
+      window.localStorage.getItem(CASH_OFF_SELECTION_KEY);
+
+    if (stored) {
+      setSelectedCashOffProductId(stored);
+    }
+
+    const prepareRewardSession = async () => {
+      const params =
+        new URLSearchParams(window.location.search);
+
+      const smsHandoff =
+        params.get("sms_handoff");
+
+      if (smsHandoff) {
+        setSmsHandoffLoading(true);
+        setSpinError(null);
+
+        try {
+          const visitorId =
+            getVisitorId();
+
+          if (!visitorId) {
+            throw new Error(
+              "We could not identify this browser.",
+            );
+          }
+
+          const data =
+            await callWheelApi<{
+              wheel_session_token: string;
+              state: WheelState;
+              first_name?: string;
+              campaign_name?: string;
+              sms_recipient_id?: string;
+            }>(
+              "sms_handoff",
+              {
+                p_handoff_token: smsHandoff,
+                p_visitor_id: visitorId,
+              },
+            );
+
+          if (
+            !data?.wheel_session_token ||
+            !data?.state
+          ) {
+            throw new Error(
+              "Your Cash-Off account could not be connected.",
+            );
+          }
+
+          window.localStorage.setItem(
+            WHEEL_SESSION_KEY,
+            data.wheel_session_token,
+          );
+
+          window.localStorage.setItem(
+            REWARD_PROFILE_KEY,
+            "1",
+          );
+
+          setWheelState(data.state);
+          setRewardProfileReady(true);
+
+          setSmsWelcome({
+            firstName:
+              data.first_name?.trim() ||
+              "there",
+
+            cashOffBalance:
+              Number(
+                data.state.cash_off_balance ||
+                0,
+              ),
+
+            spinsRemaining:
+              Number(
+                data.state.spin_player
+                  ?.spins_remaining ||
+                0,
+              ),
+          });
+
+          params.delete("sms_handoff");
+          params.delete("source");
+
+          const nextQuery =
+            params.toString();
+
+          const cleanUrl =
+            `${window.location.pathname}${
+              nextQuery
+                ? `?${nextQuery}`
+                : ""
+            }${window.location.hash}`;
+
+          window.history.replaceState(
+            {},
+            "",
+            cleanUrl,
+          );
+        }
+
+        catch (error) {
+          console.error(
+            "SMS Cash-Off handoff failed:",
+            error,
+          );
+
+          setSpinError(
+            error instanceof Error
+              ? error.message
+              : "Your Cash-Off account could not be connected.",
+          );
+        }
+
+        finally {
+          setSmsHandoffLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        await ensureWheelState();
+      }
+
+      catch (error) {
+        console.warn(
+          "Wheel preload failed.",
+          error,
+        );
+      }
+    };
+
+    void prepareRewardSession();
+
     const onVisible = () => {
-      if (document.visibilityState !== "visible" || !window.sessionStorage.getItem("emmy_full_wheel_open")) return;
-      window.sessionStorage.removeItem("emmy_full_wheel_open");
-      void refreshWheelState().catch((error) => console.warn("Wheel return refresh failed.", error));
+      if (
+        document.visibilityState !== "visible" ||
+        !window.sessionStorage.getItem(
+          "emmy_full_wheel_open",
+        )
+      ) {
+        return;
+      }
+
+      window.sessionStorage.removeItem(
+        "emmy_full_wheel_open",
+      );
+
+      void refreshWheelState().catch(
+        (error) =>
+          console.warn(
+            "Wheel return refresh failed.",
+            error,
+          ),
+      );
+
       void trackReturnedFromFullWheel();
     };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
-    return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
+
+    document.addEventListener(
+      "visibilitychange",
+      onVisible,
+    );
+
+    window.addEventListener(
+      "focus",
+      onVisible,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        onVisible,
+      );
+
+      window.removeEventListener(
+        "focus",
+        onVisible,
+      );
+    };
   }, [ensureWheelState, refreshWheelState]);
 
   const registerRewardProfile = useCallback(async (profile: { fullName: string; phone: string; email: string }) => {
@@ -1459,6 +1650,96 @@ export default function ProductsPage() {
           </div>
         </div>
       </section>
+
+      {smsHandoffLoading && (
+        <section className="sms-cashoff-section">
+          <div className="section-shell">
+            <div className="sms-cashoff-banner sms-cashoff-loading">
+              <div>
+                <span className="sms-cashoff-eyebrow">
+                  EMMYTECH CASH-OFF
+                </span>
+
+                <h2>
+                  Connecting your Spin &amp; Save account…
+                </h2>
+
+                <p>
+                  We are restoring your existing Cash-Off and spins.
+                </p>
+              </div>
+
+              <Loader2
+                size={28}
+                className="animate-spin"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {smsWelcome && !smsHandoffLoading && (
+        <section className="sms-cashoff-section">
+          <div className="section-shell">
+            <div className="sms-cashoff-banner">
+
+              <div className="sms-cashoff-copy">
+                <span className="sms-cashoff-eyebrow">
+                  WELCOME BACK
+                </span>
+
+                <h2>
+                  {smsWelcome.firstName}, your EmmyTech rewards are still here.
+                </h2>
+
+                <p>
+                  When you used EmmyTech Spin &amp; Save,
+                  you built up rewards on your account.
+                  We connected them automatically, so you
+                  do not need to enter your details again.
+                </p>
+              </div>
+
+              <div className="sms-cashoff-rewards">
+
+                <div className="sms-reward-card">
+                  <span>
+                    Cash-Off available
+                  </span>
+
+                  <strong>
+                    {formatRewardMoney(
+                      smsWelcome.cashOffBalance,
+                    )}
+                  </strong>
+                </div>
+
+                <div className="sms-reward-card">
+                  <span>
+                    Spins available
+                  </span>
+
+                  <strong>
+                    {smsWelcome.spinsRemaining}
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  className="sms-cashoff-close"
+                  onClick={() =>
+                    setSmsWelcome(null)
+                  }
+                >
+                  Start shopping
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className={`sticky-control-bar ${controlBarVisible ? "visible" : "hidden"}`}>
         <div className="control-bar-inner section-shell">

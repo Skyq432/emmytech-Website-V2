@@ -3739,3 +3739,141 @@
   .products-page .wheel-fab span.wheel-fab-copy { display: grid; }
   .products-page .wheel-fab-copy small { display: none; }
 }
+
+
+/* SMS CASH-OFF RETURN */
+
+.sms-cashoff-section {
+  padding: 22px 0 4px;
+  background: var(--product-bg, #f6f8fc);
+}
+
+.sms-cashoff-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  align-items: center;
+  padding: 26px 30px;
+  border: 1px solid rgba(3, 36, 137, 0.11);
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at 92% 15%,
+      rgba(255, 177, 0, 0.20),
+      transparent 28%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f8faff 100%
+    );
+  box-shadow:
+    0 14px 38px rgba(3, 36, 137, 0.08);
+}
+
+.sms-cashoff-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #ffb100;
+}
+
+.sms-cashoff-loading {
+  min-height: 126px;
+}
+
+.sms-cashoff-copy {
+  max-width: 720px;
+}
+
+.sms-cashoff-eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #032489;
+}
+
+.sms-cashoff-banner h2 {
+  margin: 0;
+  color: #0b1838;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.12;
+}
+
+.sms-cashoff-banner p {
+  margin: 10px 0 0;
+  max-width: 700px;
+  color: #68728a;
+  line-height: 1.65;
+}
+
+.sms-cashoff-rewards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(135px, 1fr));
+  gap: 10px;
+  min-width: 330px;
+}
+
+.sms-reward-card {
+  padding: 15px 16px;
+  border: 1px solid rgba(3, 36, 137, 0.10);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.sms-reward-card span {
+  display: block;
+  margin-bottom: 4px;
+  color: #778097;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sms-reward-card strong {
+  color: #032489;
+  font-size: 21px;
+}
+
+.sms-cashoff-close {
+  grid-column: 1 / -1;
+  min-height: 43px;
+  border: 0;
+  border-radius: 12px;
+  background: #032489;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sms-cashoff-close:hover {
+  filter: brightness(1.08);
+}
+
+@media (max-width: 800px) {
+  .sms-cashoff-banner {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .sms-cashoff-rewards {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .sms-cashoff-rewards {
+    grid-template-columns: 1fr;
+  }
+
+  .sms-cashoff-close {
+    grid-column: auto;
+  }
+}
