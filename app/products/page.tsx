@@ -55,6 +55,7 @@ import {
   trackCashOffProductSelected,
   trackFullWheelOpened,
   trackReturnedFromFullWheel,
+  trackWebsiteEvent,
 } from "@/lib/tracking";
 
 async function callWheelApi<T>(
@@ -1068,28 +1069,73 @@ export default function ProductsPage() {
           setWheelState(data.state);
           setRewardProfileReady(true);
 
+          const returnedCashOff =
+            Number(
+              data.state.cash_off_balance ||
+              0,
+            );
+
+          const returnedSpins =
+            Number(
+              data.state.spin_player
+                ?.spins_remaining ||
+              0,
+            );
+
           setSmsWelcome({
             firstName:
               data.first_name?.trim() ||
               "there",
 
             cashOffBalance:
-              Number(
-                data.state.cash_off_balance ||
-                0,
-              ),
+              returnedCashOff,
 
             spinsRemaining:
-              Number(
-                data.state.spin_player
-                  ?.spins_remaining ||
-                0,
-              ),
+              returnedSpins,
 
             lastSpinDate:
               data.last_spin_at ||
               null,
           });
+
+          void trackWebsiteEvent(
+            "sms_returned",
+            {
+              metadata: {
+                campaign_name:
+                  data.campaign_name ||
+                  null,
+
+                sms_recipient_id:
+                  data.sms_recipient_id ||
+                  null,
+
+                cash_off_balance:
+                  returnedCashOff,
+
+                spins_remaining:
+                  returnedSpins,
+              },
+            },
+          );
+
+          void trackWebsiteEvent(
+            "welcome_modal_shown",
+            {
+              metadata: {
+                cash_off_balance:
+                  returnedCashOff,
+
+                spins_remaining:
+                  returnedSpins,
+
+                has_last_spin_date:
+                  Boolean(
+                    data.last_spin_at,
+                  ),
+              },
+            },
+          );
 
           params.delete("sms_handoff");
           params.delete("source");
@@ -1256,9 +1302,57 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
-    return () => window.clearTimeout(timeout);
+    const timeout =
+      window.setTimeout(
+        () =>
+          setDebouncedSearch(
+            searchQuery.trim(),
+          ),
+        350,
+      );
+
+    return () =>
+      window.clearTimeout(
+        timeout,
+      );
   }, [searchQuery]);
+
+
+  useEffect(() => {
+    const [
+      minimum,
+      maximum,
+    ] = priceRange;
+
+    if (
+      minimum === 0 &&
+      maximum === 10000000
+    ) {
+      return;
+    }
+
+    const timeout =
+      window.setTimeout(
+        () => {
+          void trackWebsiteEvent(
+            "price_filter_changed",
+            {
+              metadata: {
+                minimum,
+                maximum,
+              },
+            },
+          );
+        },
+        600,
+      );
+
+    return () =>
+      window.clearTimeout(
+        timeout,
+      );
+  }, [priceRange]);
+
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -1342,7 +1436,26 @@ export default function ProductsPage() {
       });
       const total = count || 0;
       setTotalProducts(total);
-      setHasMore(from + mapped.length < total);
+      setHasMore(
+        from + mapped.length <
+        total,
+      );
+
+      if (
+        !append &&
+        debouncedSearch
+      ) {
+        void trackWebsiteEvent(
+          "search_performed",
+          {
+            searchQuery:
+              debouncedSearch,
+
+            resultsCount:
+              total,
+          },
+        );
+      }
     } catch (err: any) {
       if (requestId !== requestSequence.current) return;
       setError(err.message || "Failed to load products");
@@ -1375,7 +1488,21 @@ export default function ProductsPage() {
       return [...prev, { ...product, quantity: 1 }];
     });
 
-    trackAddToCart(product.id, 1);
+    void trackAddToCart(
+      product.id,
+      1,
+    );
+
+    void trackWebsiteEvent(
+      "cart_opened",
+      {
+        metadata: {
+          source:
+            "add_to_cart",
+        },
+      },
+    );
+
     setIsCartOpen(true);
   }, []);
 
@@ -1392,8 +1519,35 @@ export default function ProductsPage() {
 
       setCart((prev) =>
         prev.map((item) => {
-          if (item.id !== id) return item;
-          return { ...item, quantity: Math.min(qty, item.stock || qty) };
+          if (
+            item.id !== id
+          ) {
+            return item;
+          }
+
+          const nextQuantity =
+            Math.min(
+              qty,
+              item.stock ||
+              qty,
+            );
+
+          void trackWebsiteEvent(
+            "cart_quantity_changed",
+            {
+              productId:
+                item.id,
+
+              quantity:
+                nextQuantity,
+            },
+          );
+
+          return {
+            ...item,
+            quantity:
+              nextQuantity,
+          };
         })
       );
     },
@@ -1483,16 +1637,120 @@ export default function ProductsPage() {
     }
   }, []);
 
-  const trackCartWhatsApp = useCallback((items: CartItem[]) => {
-    items.forEach((item) => void trackWhatsAppPurchaseClicked(item.id, item.quantity));
-  }, []);
+  const trackCartWhatsApp =
+    useCallback(
+      (
+        items:
+          CartItem[],
+      ) => {
 
-  const openSpinWheel = useCallback(async (product?: Product) => {
-    setSpinProductId(product?.id || null);
+        const totalUnits =
+          items.reduce(
+            (
+              sum,
+              item,
+            ) =>
+              sum +
+              item.quantity,
+            0,
+          );
+
+        const subtotal =
+          items.reduce(
+            (
+              sum,
+              item,
+            ) =>
+              sum +
+              (
+                item.price *
+                item.quantity
+              ),
+            0,
+          );
+
+        void trackWebsiteEvent(
+          "checkout_started",
+          {
+            quantity:
+              Math.max(
+                1,
+                totalUnits,
+              ),
+
+            metadata: {
+              product_count:
+                items.length,
+
+              total_units:
+                totalUnits,
+
+              subtotal,
+
+              cash_off_selected:
+                Boolean(
+                  selectedCashOffProductId,
+                ),
+
+              cash_off_balance:
+                Number(
+                  wheelState
+                    ?.cash_off_balance ||
+                  0,
+                ),
+            },
+          },
+        );
+
+        items.forEach(
+          (
+            item,
+          ) =>
+            void trackWhatsAppPurchaseClicked(
+              item.id,
+              item.quantity,
+            ),
+        );
+
+      },
+      [
+        selectedCashOffProductId,
+        wheelState
+          ?.cash_off_balance,
+      ],
+    );
+
+  const openSpinWheel =
+    useCallback(
+      async (
+        product?: Product,
+        source =
+          "store_launcher",
+      ) => {
+
+    setSpinProductId(
+      product?.id ||
+      null,
+    );
+
     setSpinError(null);
     setWheelSpinResult(null);
     setWheelSpinTarget(null);
     setWheelOpen(true);
+
+    void trackWebsiteEvent(
+      "spin_save_opened",
+      {
+        productId:
+          product?.id ||
+          null,
+
+        metadata: {
+          source,
+        },
+      },
+    );
+
     setWheelLoading(true);
     try {
       await ensureWheelState();
@@ -1503,7 +1761,11 @@ export default function ProductsPage() {
       setWheelLoading(false);
       setSpinProductId(null);
     }
-  }, [ensureWheelState]);
+      },
+      [
+        ensureWheelState,
+      ],
+    );
 
   const spinNativeWheel = useCallback(async () => {
     const token = window.localStorage.getItem(WHEEL_SESSION_KEY);
@@ -1517,8 +1779,64 @@ export default function ProductsPage() {
       const nextResult = (data?.result || null) as WheelSpinResult | null;
       setWheelSpinTarget(nextResult);
       await new Promise((resolve) => window.setTimeout(resolve, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 350 : 6000));
-      setWheelState((data?.state || data) as WheelState);
-      setWheelSpinResult(nextResult);
+      const nextState =
+        (
+          data?.state ||
+          data
+        ) as WheelState;
+
+      setWheelState(
+        nextState,
+      );
+
+      setWheelSpinResult(
+        nextResult,
+      );
+
+      void trackWebsiteEvent(
+        "spin_completed",
+        {
+          metadata: {
+            result_label:
+              nextResult?.label ||
+              null,
+
+            result_type:
+              nextResult
+                ?.result_type ||
+              null,
+
+            cash_amount:
+              Number(
+                nextResult
+                  ?.cash_amount ||
+                0,
+              ),
+
+            cash_off_amount:
+              Number(
+                nextResult
+                  ?.cash_off_amount ||
+                0,
+              ),
+
+            cash_off_after:
+              Number(
+                nextState
+                  ?.cash_off_balance ||
+                0,
+              ),
+
+            spins_remaining:
+              Number(
+                nextState
+                  ?.spin_player
+                  ?.spins_remaining ||
+                0,
+              ),
+          },
+        },
+      );
     } catch (error) {
       setSpinError(error instanceof Error ? error.message : "The spin could not be completed. Please retry.");
     } finally { setWheelSpinning(false); }
@@ -1529,10 +1847,26 @@ export default function ProductsPage() {
     window.requestAnimationFrame(() => wheelLauncherRef.current?.focus());
   }, []);
 
-  const viewCartFromWheel = useCallback(() => {
-    setWheelOpen(false);
-    setIsCartOpen(true);
-  }, []);
+  const viewCartFromWheel =
+    useCallback(
+      () => {
+
+        void trackWebsiteEvent(
+          "cart_opened",
+          {
+            metadata: {
+              source:
+                "spin_save",
+            },
+          },
+        );
+
+        setWheelOpen(false);
+        setIsCartOpen(true);
+
+      },
+      [],
+    );
 
   const openFullWheel = useCallback(async (source: "overlay" | "cart") => {
     setFullWheelBusy(true);
@@ -1651,32 +1985,86 @@ export default function ProductsPage() {
       </section>
 
       <CashOffWelcomeModal
-        isOpen={Boolean(smsWelcome)}
-        onClose={() =>
-          setSmsWelcome(null)
+        isOpen={
+          Boolean(
+            smsWelcome,
+          )
         }
+
+        onClose={() => {
+          void trackWebsiteEvent(
+            "welcome_modal_dismissed",
+            {
+              metadata: {
+                method:
+                  "close",
+              },
+            },
+          );
+
+          setSmsWelcome(
+            null,
+          );
+        }}
+
         userName={
-          smsWelcome?.firstName ||
+          smsWelcome
+            ?.firstName ||
           ""
         }
+
         cashOffAmount={
-          smsWelcome?.cashOffBalance ||
+          smsWelcome
+            ?.cashOffBalance ||
           0
         }
+
         lastSpinDate={
-          smsWelcome?.lastSpinDate ||
+          smsWelcome
+            ?.lastSpinDate ||
           null
         }
+
         spinsRemaining={
-          smsWelcome?.spinsRemaining ||
+          smsWelcome
+            ?.spinsRemaining ||
           0
         }
-        onExploreProducts={() =>
-          setSmsWelcome(null)
-        }
+
+        onExploreProducts={() => {
+          void trackWebsiteEvent(
+            "welcome_explore_products",
+          );
+
+          setSmsWelcome(
+            null,
+          );
+        }}
+
         onUseSpins={() => {
-          setSmsWelcome(null);
-          void openSpinWheel();
+          const spinsRemaining =
+            smsWelcome
+              ?.spinsRemaining ||
+            0;
+
+          void trackWebsiteEvent(
+            "welcome_use_spins",
+            {
+              metadata: {
+                spins_remaining:
+                  spinsRemaining,
+              },
+            },
+          );
+
+          setSmsWelcome(
+            null,
+          );
+
+          void openSpinWheel(
+            undefined,
+            "welcome_modal",
+          );
         }}
       />
 
@@ -1687,7 +2075,24 @@ export default function ProductsPage() {
               <button
                 key={cat.id}
                 className={`category-pill ${activeCategory === cat.id ? "active" : ""}`}
-                onClick={() => setActiveCategory(cat.id)}
+                onClick={() => {
+                  setActiveCategory(
+                    cat.id,
+                  );
+
+                  void trackWebsiteEvent(
+                    "category_selected",
+                    {
+                      metadata: {
+                        category_id:
+                          cat.id,
+
+                        category_name:
+                          cat.name,
+                      },
+                    },
+                  );
+                }}
               >
                 {cat.icon}
                 <span>{cat.name}</span>
@@ -1697,7 +2102,27 @@ export default function ProductsPage() {
 
           <div className="bar-right-controls">
             {activeCategory !== "all" && (
-              <button className="filter-chip" onClick={() => setActiveCategory("all")}>
+              <button
+                className="filter-chip"
+                onClick={() => {
+                  setActiveCategory(
+                    "all",
+                  );
+
+                  void trackWebsiteEvent(
+                    "category_selected",
+                    {
+                      metadata: {
+                        category_id:
+                          "all",
+
+                        category_name:
+                          "All Products",
+                      },
+                    },
+                  );
+                }}
+              >
                 {categories.find((category) => category.id === activeCategory)?.name}
                 <X size={12} />
               </button>
@@ -1713,7 +2138,27 @@ export default function ProductsPage() {
             <span className="result-count">{totalProducts} items</span>
 
             <div className="sort-dropdown">
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <select
+                value={sortBy}
+                onChange={(event) => {
+                  const nextSort =
+                    event.target.value;
+
+                  setSortBy(
+                    nextSort,
+                  );
+
+                  void trackWebsiteEvent(
+                    "sort_changed",
+                    {
+                      metadata: {
+                        sort:
+                          nextSort,
+                      },
+                    },
+                  );
+                }}
+              >
                 {sortOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -1771,8 +2216,30 @@ export default function ProductsPage() {
               <button
                 className="filter-reset"
                 onClick={() => {
-                  setPriceRange([0, 10000000]);
-                  setShowFilters(false);
+                  setPriceRange([
+                    0,
+                    10000000,
+                  ]);
+
+                  setShowFilters(
+                    false,
+                  );
+
+                  void trackWebsiteEvent(
+                    "price_filter_changed",
+                    {
+                      metadata: {
+                        minimum:
+                          0,
+
+                        maximum:
+                          10000000,
+
+                        reset:
+                          true,
+                      },
+                    },
+                  );
                 }}
               >
                 Reset
@@ -1783,14 +2250,42 @@ export default function ProductsPage() {
       </div>
 
       <div className="store-action-dock">
-        <button ref={wheelLauncherRef} className="wheel-fab" onClick={() => void openSpinWheel()} aria-label="Open Spin & Save">
+        <button
+          ref={wheelLauncherRef}
+          className="wheel-fab"
+          onClick={() =>
+            void openSpinWheel(
+              undefined,
+              "store_launcher",
+            )
+          }
+          aria-label="Open Spin & Save"
+        >
           <span className="wheel-fab-icon" aria-hidden="true"><i /></span>
           <span className="wheel-fab-copy">
             <strong>Spin &amp; Save</strong>
             <small>{launcherRewardCopy}</small>
           </span>
         </button>
-        <button className="cart-fab" onClick={() => setIsCartOpen(true)} aria-label={`Open cart with ${cartItemCount} items`}>
+        <button
+          className="cart-fab"
+          onClick={() => {
+            void trackWebsiteEvent(
+              "cart_opened",
+              {
+                metadata: {
+                  source:
+                    "store_launcher",
+                },
+              },
+            );
+
+            setIsCartOpen(
+              true,
+            );
+          }}
+          aria-label={`Open cart with ${cartItemCount} items`}
+        >
           <ShoppingCart size={20} />
           {cartItemCount > 0 && <span className="cart-fab-badge">{cartItemCount}</span>}
         </button>
